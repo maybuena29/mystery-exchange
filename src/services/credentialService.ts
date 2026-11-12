@@ -2,9 +2,14 @@ const ORG_PREFIX = 'me_org_';
 
 export function saveOrganizerToken(groupId: string, token: string): void {
   try {
-    sessionStorage.setItem(`${ORG_PREFIX}${groupId}`, token);
+    localStorage.setItem(`${ORG_PREFIX}${groupId}`, token);
   } catch {
-    // Ignore storage errors in restricted contexts
+    // Fallback if localStorage is restricted
+    try {
+      sessionStorage.setItem(`${ORG_PREFIX}${groupId}`, token);
+    } catch {
+      // Ignore
+    }
   }
 }
 
@@ -23,7 +28,7 @@ export function getOrganizerToken(groupId: string): string | null {
   }
 
   try {
-    return sessionStorage.getItem(`${ORG_PREFIX}${groupId}`);
+    return localStorage.getItem(`${ORG_PREFIX}${groupId}`) || sessionStorage.getItem(`${ORG_PREFIX}${groupId}`);
   } catch {
     return null;
   }
@@ -31,6 +36,7 @@ export function getOrganizerToken(groupId: string): string | null {
 
 export function clearOrganizerToken(groupId: string): void {
   try {
+    localStorage.removeItem(`${ORG_PREFIX}${groupId}`);
     sessionStorage.removeItem(`${ORG_PREFIX}${groupId}`);
   } catch {
     // Ignore
