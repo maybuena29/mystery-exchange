@@ -157,18 +157,21 @@ describe('Mystery Exchange End-to-End API & Security', () => {
     );
     expect(draw1.status).toBe(200);
 
-    // Second draw fails
+    // Second draw fails because it is already drawn
     const draw2 = await handleStartDraw(
       jsonReq('http://localhost/api/start-draw', 'POST', { groupId }, organizerToken)
     );
     expect(draw2.status).toBe(409);
 
-    // Reset after draw fails
+    // Reset after draw resets group to CREATED so it can be reused
     const resetAfterDraw = await handleOrganizerGroup(
       jsonReq(`http://localhost/api/organizer/${groupId}`, 'PATCH', { action: 'reset_group' }, organizerToken),
       groupId
     );
-    expect(resetAfterDraw.status).toBe(409);
+    expect(resetAfterDraw.status).toBe(200);
+    const { group: resetGroup } = (await resetAfterDraw.json()) as { group: OrganizerGroupView };
+    expect(resetGroup.status).toBe('CREATED');
+    expect(resetGroup.participantCount).toBe(0);
   });
 
   it('passes Final Acceptance Scenario: Christmas Mystery Exchange 2026 (10 participants, ₱500, Dec 25 2026)', async () => {

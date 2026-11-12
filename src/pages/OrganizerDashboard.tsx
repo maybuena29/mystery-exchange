@@ -607,18 +607,31 @@ export function OrganizerDashboard() {
             </button>
           )}
 
-          {group.status === 'DRAWN' && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() =>
-                void runAction({ action: 'complete_event' }, 'Exchange marked as completed.')
-              }
-              className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#274938]"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              Mark Event Completed
-            </button>
+          {(group.status === 'DRAWN' || group.status === 'COMPLETED') && (
+            <>
+              {group.status === 'DRAWN' && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    void runAction({ action: 'complete_event' }, 'Exchange marked as completed.')
+                  }
+                  className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#274938]"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Mark Event Completed
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setResetModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#874B4B]/30 px-4 py-2.5 text-xs font-medium text-[#874B4B] hover:bg-[#874B4B]/10 disabled:opacity-50"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reset &amp; Start Over
+              </button>
+            </>
           )}
 
           {isBeforeDraw && (
@@ -660,13 +673,13 @@ export function OrganizerDashboard() {
       <ConfirmModal
         isOpen={resetModalOpen}
         title="Reset this exchange group?"
-        message="This will remove all current participant submissions and reset the group to Created. This is only possible before the draw."
+        message="This will clear all participant submissions, assignments, and gift progress, allowing you to reuse this group link for a brand new round."
         confirmLabel="Reset Group"
         destructive
         isLoading={busy}
         onConfirm={() => {
           setResetModalOpen(false);
-          void runAction({ action: 'reset_group' }, 'Group has been reset.');
+          void runAction({ action: 'reset_group' }, 'Group has been reset and is ready for new participants.');
         }}
         onCancel={() => setResetModalOpen(false)}
       />

@@ -302,19 +302,22 @@ export async function handleOrganizerGroup(req: Request, groupId: string): Promi
   }
 
   if (action === 'reset_group') {
-    if (group.status === 'DRAWN' || group.status === 'LOCKED' || group.status === 'COMPLETED') {
-      return errorResponse('Cannot reset a group after the draw has been finalized.', 409);
-    }
-    // Delete all participant submissions
-    await Promise.all(
-      group.participantIds.map((pid) => storage.delete(keys.submission(groupId, pid)))
-    );
+    // Delete all participant submissions, assignments, locks, and progress
+    await Promise.all([
+      ...group.participantIds.flatMap((pid) => [
+        storage.delete(keys.submission(groupId, pid)),
+        storage.delete(keys.assignment(groupId, pid)),
+        storage.delete(keys.giftProgress(groupId, pid)),
+      ]),
+      storage.delete(keys.drawLock(groupId)),
+    ]);
 
     const updated: GroupRecord = {
       ...group,
       status: 'CREATED',
       participantIds: [],
       participantSummaries: {},
+      drawnAt: undefined,
       updatedAt: now,
     };
     const res = await storage.setJSON(keys.group(groupId), updated, { onlyIfMatch: etag });

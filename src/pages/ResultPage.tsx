@@ -157,7 +157,10 @@ export function ResultPage() {
 
         {group.instructions && (
           <div className="mx-auto max-w-xl rounded-xl border border-[#E8E6DF] bg-[#F8F7F3]/70 p-4 text-left text-xs text-[#777B76]">
-            <strong className="text-[#262A27]">Instructions:</strong> {group.instructions}
+            <p className="font-semibold text-[#262A27] mb-1">Instructions:</p>
+            <div className="whitespace-pre-line leading-relaxed">
+              {group.instructions}
+            </div>
           </div>
         )}
       </div>

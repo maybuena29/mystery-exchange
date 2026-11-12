@@ -277,10 +277,12 @@ export function JoinGroupPage() {
 
         {group.instructions && (
           <div className="rounded-xl border border-[#E8E6DF] bg-[#F8F7F3] p-4 text-sm text-[#262A27]">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#777B76] mb-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#777B76] mb-1.5">
               Organizer Instructions
             </p>
-            {group.instructions}
+            <div className="whitespace-pre-line leading-relaxed">
+              {group.instructions}
+            </div>
           </div>
         )}
 
