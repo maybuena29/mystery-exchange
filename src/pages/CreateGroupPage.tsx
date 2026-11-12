@@ -121,9 +121,10 @@ export function CreateGroupPage() {
             </p>
             <CopyShareActions
               url={inviteUrl}
+              copyText={`🎁 ${created.group.groupName}\nJoin our anonymous song-based gift exchange on HulaWho!\n\n👉 ${inviteUrl}`}
               shareTitle={created.group.groupName}
-              shareText={`Join "${created.group.groupName}" on HulaWho!`}
-              copyLabel="Copy Invitation Link"
+              shareText={`Join "${created.group.groupName}" on HulaWho!\n\n${inviteUrl}`}
+              copyLabel="Copy Invite Message"
             />
           </div>
 

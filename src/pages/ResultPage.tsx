@@ -10,6 +10,7 @@ import {
   Save,
   Sparkles,
 } from 'lucide-react';
+import { LoadingScreen } from '../components/common/LoadingScreen';
 import { participantService } from '../services/api';
 import type {
   GiftChecklist,
@@ -95,9 +96,10 @@ export function ResultPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-20 text-center text-sm text-[#777B76]">
-        Revealing your mystery match...
-      </div>
+      <LoadingScreen
+        title="Revealing Your Mystery Match..."
+        subtitle="Unlocking your recipient's song, wishlist, and gift ideas."
+      />
     );
   }
 
@@ -157,7 +159,10 @@ export function ResultPage() {
 
         {group.instructions && (
           <div className="mx-auto max-w-xl rounded-xl border border-[#E8E6DF] bg-[#F8F7F3]/70 p-4 text-left text-xs text-[#777B76]">
-            <strong className="text-[#262A27]">Instructions:</strong> {group.instructions}
+            <p className="font-semibold text-[#262A27] mb-1">Instructions:</p>
+            <div className="whitespace-pre-line leading-relaxed">
+              {group.instructions}
+            </div>
           </div>
         )}
       </div>

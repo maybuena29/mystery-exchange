@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Save,
 } from 'lucide-react';
+import { LoadingScreen } from '../components/common/LoadingScreen';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { WishlistEditor } from '../components/wishlist/WishlistEditor';
 import { participantService } from '../services/api';
@@ -86,9 +87,10 @@ export function ParticipantDashboard() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-20 text-center text-sm text-[#777B76]">
-        Loading your participant dashboard...
-      </div>
+      <LoadingScreen
+        title="Loading Your Dashboard..."
+        subtitle="Retrieving your song submission, wishlist, and exchange status."
+      />
     );
   }
 

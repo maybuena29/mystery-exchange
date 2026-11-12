@@ -3,6 +3,7 @@ import { Check, Copy, Share2 } from 'lucide-react';
 
 interface CopyShareActionsProps {
   url: string;
+  copyText?: string;
   shareTitle?: string;
   shareText?: string;
   copyLabel?: string;
@@ -11,6 +12,7 @@ interface CopyShareActionsProps {
 
 export function CopyShareActions({
   url,
+  copyText,
   shareTitle = 'HulaWho',
   shareText = 'Join our anonymous song-based gift exchange!',
   copyLabel = 'Copy Link',
@@ -18,15 +20,17 @@ export function CopyShareActions({
 }: CopyShareActionsProps) {
   const [copied, setCopied] = useState(false);
 
+  const textToCopy = copyText || url;
+
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     } catch {
       // Fallback for older browsers
-      const input = document.createElement('input');
-      input.value = url;
+      const input = document.createElement('textarea');
+      input.value = textToCopy;
       document.body.appendChild(input);
       input.select();
       document.execCommand('copy');
