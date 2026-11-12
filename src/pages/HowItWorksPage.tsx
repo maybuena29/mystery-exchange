@@ -92,7 +92,7 @@ export function HowItWorksPage() {
           anonymous identity. You prepare a gift for a song and a wishlist—keeping the gift
           exchange spirit genuinely mysterious until gift day.
         </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-center gap-3.5 sm:flex-row">
           <Link
             to="/create"
             className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-6 py-3 text-sm font-medium text-white hover:bg-[#274938]"
@@ -106,6 +106,15 @@ export function HowItWorksPage() {
           >
             Join an Exchange
           </Link>
+          <a
+            href="/video-guide.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-[#B79B62]/40 bg-[#B79B62]/10 px-5 py-3 text-sm font-medium text-[#7A6232] hover:bg-[#B79B62]/20"
+          >
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#B79B62] text-white text-[9px] font-bold">▶</span>
+            Watch Video Walkthrough
+          </a>
         </div>
       </section>
 
