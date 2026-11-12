@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Playfair Display", Georgia, Cambria, "Times New Roman", serif;
+  --color-cream: #F8F7F3;
+  --color-charcoal: #262A27;
+  --color-stone: #777B76;
+  --color-evergreen: #315B46;
+  --color-burgundy: #874B4B;
+  --color-gold: #B79B62;
+  --color-border: #E8E6DF;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: #F8F7F3;
+    color: #262A27;
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, .font-editorial {
+    font-family: var(--font-serif);
+  }
+
+  /* Hide Edge and Internet Explorer default password reveal button */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.card-editorial {
+  box-shadow: 0 1px 2px rgba(38, 42, 39, 0.03), 0 10px 28px -14px rgba(38, 42, 39, 0.08);
+}
+
+.hero-ambient {
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(49, 91, 70, 0.055), transparent 45%),
+    radial-gradient(circle at 80% 25%, rgba(183, 155, 98, 0.065), transparent 45%);
+}
