@@ -29,3 +29,10 @@ Homestead.json
 .env.production
 .phpactor.json
 auth.json
+
+# Vite / Netlify / TypeScript build artifacts
+dist/
+.netlify/
+*.tsbuildinfo
+.DS_Store
+coverage/
