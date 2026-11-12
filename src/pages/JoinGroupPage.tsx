@@ -12,6 +12,7 @@ import {
   Users,
 } from 'lucide-react';
 import { CopyShareActions } from '../components/common/CopyShareActions';
+import { LoadingScreen } from '../components/common/LoadingScreen';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { WishlistEditor } from '../components/wishlist/WishlistEditor';
 import { groupService, participantService } from '../services/api';
@@ -151,9 +152,10 @@ export function JoinGroupPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-20 text-center text-sm text-[#777B76]">
-        Loading exchange details...
-      </div>
+      <LoadingScreen
+        title="Opening Exchange..."
+        subtitle="Retrieving group details, budget, and wishlist settings."
+      />
     );
   }
 

@@ -16,6 +16,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { CopyShareActions } from '../components/common/CopyShareActions';
+import { LoadingScreen } from '../components/common/LoadingScreen';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { groupService } from '../services/api';
@@ -205,9 +206,10 @@ export function OrganizerDashboard() {
 
   if (loading && !group) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-20 text-center text-sm text-[#777B76]">
-        Loading organizer dashboard...
-      </div>
+      <LoadingScreen
+        title="Loading Organizer Dashboard..."
+        subtitle="Verifying credentials and fetching participant progress."
+      />
     );
   }
 

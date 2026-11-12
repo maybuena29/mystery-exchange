@@ -10,6 +10,7 @@ import {
   Save,
   Sparkles,
 } from 'lucide-react';
+import { LoadingScreen } from '../components/common/LoadingScreen';
 import { participantService } from '../services/api';
 import type {
   GiftChecklist,
@@ -95,9 +96,10 @@ export function ResultPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-20 text-center text-sm text-[#777B76]">
-        Revealing your mystery match...
-      </div>
+      <LoadingScreen
+        title="Revealing Your Mystery Match..."
+        subtitle="Unlocking your recipient's song, wishlist, and gift ideas."
+      />
     );
   }
 
