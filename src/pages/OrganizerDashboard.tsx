@@ -349,9 +349,10 @@ export function OrganizerDashboard() {
           </p>
           <CopyShareActions
             url={inviteUrl}
+            copyText={`🎁 ${group.groupName}\nJoin our anonymous song-based gift exchange on HulaWho!\n\n👉 ${inviteUrl}`}
             shareTitle={group.groupName}
-            shareText={`Join "${group.groupName}" on HulaWho!`}
-            copyLabel="Copy Invitation Link"
+            shareText={`Join "${group.groupName}" on HulaWho!\n\n${inviteUrl}`}
+            copyLabel="Copy Invite Message"
             compact
           />
           <div className="border-t border-[#E8E6DF] pt-3 space-y-2">
