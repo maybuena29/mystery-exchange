@@ -11,6 +11,7 @@ import { RecoverLinkPage } from './pages/RecoverLinkPage';
 import { ResultPage } from './pages/ResultPage';
 import { SuperAdminPage } from './pages/SuperAdminPage';
 import { TermsPage } from './pages/TermsPage';
+import { WheelOfSongsPage } from './pages/WheelOfSongsPage';
 
 function NotFoundPage() {
   return (
@@ -41,9 +42,12 @@ export function App() {
           <Route path="/create" element={<CreateGroupPage />} />
           <Route path="/join" element={<JoinGroupPage />} />
           <Route path="/join/:groupId" element={<JoinGroupPage />} />
+          <Route path="/group/:groupId" element={<JoinGroupPage />} />
           <Route path="/recover" element={<RecoverLinkPage />} />
           <Route path="/recover/:groupId" element={<RecoverLinkPage />} />
           <Route path="/organizer/:groupId" element={<OrganizerDashboard />} />
+          <Route path="/organizer/:groupId/wheel" element={<WheelOfSongsPage />} />
+          <Route path="/wheel/:groupId" element={<WheelOfSongsPage />} />
           <Route path="/participant/:privateToken" element={<ParticipantDashboard />} />
           <Route path="/result/:privateToken" element={<ResultPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

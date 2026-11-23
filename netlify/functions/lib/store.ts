@@ -12,7 +12,32 @@ import type {
   ParticipantPreferences,
   PublicGroupInfo,
   WishlistItem,
+  WheelCurrentSpin,
+  WheelEntry,
+  WheelWinnerRecord,
+  WheelStateRecord,
+  WheelWinNotice,
+  WheelViewState,
 } from '../../../src/types/exchange';
+
+export type {
+  BudgetSettings,
+  DrawReadiness,
+  EventCategory,
+  EventStatus,
+  GiftChecklist,
+  GroupSettings,
+  OrganizerGroupView,
+  ParticipantPreferences,
+  PublicGroupInfo,
+  WishlistItem,
+  WheelCurrentSpin,
+  WheelEntry,
+  WheelWinnerRecord,
+  WheelStateRecord,
+  WheelWinNotice,
+  WheelViewState,
+};
 
 export interface ParticipantSummary {
   songTitle: string;
@@ -349,6 +374,7 @@ export const keys = {
   giftProgress: (groupId: string, giverParticipantId: string) => `gift-progress/${groupId}/${giverParticipantId}`,
   drawLock: (groupId: string) => `locks/${groupId}`,
   recovery: (groupId: string, songHash: string) => `recovery/${groupId}/${songHash}`,
+  wheel: (groupId: string) => `wheel/${groupId}`,
 };
 
 export function isRegistrationOpen(group: GroupRecord): boolean {

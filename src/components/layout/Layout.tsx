@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Menu, Music, X } from 'lucide-react';
 
@@ -8,6 +8,15 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm transition-colors ${
@@ -16,7 +25,8 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F7F3] text-[#262A27]">
-      <header className="sticky top-0 z-40 border-b border-[#E8E6DF] bg-[#F8F7F3]/95 backdrop-blur-sm">
+      {!isFullscreen && (
+        <header className="sticky top-0 z-40 border-b border-[#E8E6DF] bg-[#F8F7F3]/95 backdrop-blur-sm">
         {/* Subtle evergreen & gold seasonal top accent bar */}
         <div className="h-1 w-full bg-gradient-to-r from-[#315B46] via-[#B79B62] to-[#874B4B]" />
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
@@ -135,10 +145,12 @@ export function Layout({ children }: LayoutProps) {
           </div>
         )}
       </header>
+      )}
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-[#E8E6DF] bg-white">
+      {!isFullscreen && (
+        <footer className="border-t border-[#E8E6DF] bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <div className="space-y-1">
             <p className="font-editorial text-base font-semibold text-[#262A27]">
@@ -171,6 +183,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 }

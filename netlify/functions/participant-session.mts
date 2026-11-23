@@ -10,6 +10,8 @@ import {
   type GroupRecord,
   type ParticipantTokenIndex,
   type SubmissionRecord,
+  type WheelStateRecord,
+  type WheelWinnerRecord,
 } from './lib/store';
 import type { GiftProgress, ParticipantSessionView } from '../../src/types/exchange';
 
@@ -109,6 +111,25 @@ export async function handleParticipantSession(req: Request): Promise<Response> 
             updatedAt: progress.updatedAt,
           }
         : DEFAULT_GIFT_PROGRESS;
+    }
+  }
+
+  // Check if participant has won any Spin the Wheel / Wheel of Songs round
+  const wheelState = await storage.getJSON<WheelStateRecord>(keys.wheel(index.groupId));
+  if (wheelState?.winnerHistory && wheelState.winnerHistory.length > 0) {
+    const nowMs = Date.now();
+    const myWins = wheelState.winnerHistory
+      .filter((w: WheelWinnerRecord) => w.participantId === index.participantId)
+      .filter((w: WheelWinnerRecord) => !!w.revealedAt || (w.revealAt && Date.parse(w.revealAt) <= nowMs))
+      .map((w: WheelWinnerRecord) => ({
+        winnerId: w.winnerId,
+        order: w.order,
+        songTitle: w.songTitle,
+        artist: w.artist,
+        wonAt: w.wonAt,
+      }));
+    if (myWins.length > 0) {
+      session.wheelWins = myWins;
     }
   }
 

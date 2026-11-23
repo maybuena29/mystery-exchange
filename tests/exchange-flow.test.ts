@@ -537,7 +537,7 @@ describe('Mystery Exchange End-to-End API & Security', () => {
     expect(foundG1?.participantCount).toBe(1);
     expect(foundG1?.invitationUrl).toBe(`/join/${gId1}`);
     expect(foundG1?.organizerUrl).toContain(`/organizer/${gId1}`);
-    expect(foundG1?.organizerUrl).toContain(`sa_${superAdminKey}`);
+    expect(decodeURIComponent(foundG1?.organizerUrl ?? '')).toContain(`sa_${superAdminKey}`);
 
     // 5. Super Admin can access organizer dashboard directly using the super admin token
     const superAdminOrgRes = await handleOrganizerGroup(

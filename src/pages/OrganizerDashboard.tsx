@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   Calendar,
   CheckCircle2,
@@ -50,6 +50,7 @@ export function OrganizerDashboard() {
   const [editAllowAfterDraw, setEditAllowAfterDraw] = useState(false);
   const [editMaxItems, setEditMaxItems] = useState(20);
   const [editRequireWishlist, setEditRequireWishlist] = useState(false);
+  const [editEnableWheel, setEditEnableWheel] = useState(true);
 
   // Confirmation modals
   const [drawModalOpen, setDrawModalOpen] = useState(false);
@@ -73,6 +74,7 @@ export function OrganizerDashboard() {
         setEditAllowAfterDraw(data.settings?.allowEditAfterDraw ?? false);
         setEditMaxItems(data.settings?.maxWishlistItems ?? 20);
         setEditRequireWishlist(data.settings?.requireCompletedWishlist ?? false);
+        setEditEnableWheel(data.settings?.enableWheel ?? true);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load organizer dashboard.');
       } finally {
@@ -135,6 +137,7 @@ export function OrganizerDashboard() {
           allowEditAfterDraw: editAllowAfterDraw,
           maxWishlistItems: Number(editMaxItems) || 20,
           requireCompletedWishlist: editRequireWishlist,
+          enableWheel: editEnableWheel,
         },
       },
       'Exchange details and settings updated successfully.'
@@ -360,6 +363,47 @@ export function OrganizerDashboard() {
           </p>
         </div>
       </div>
+
+      {/* Lucky Draw Wheel Card */}
+      {group.settings?.enableWheel !== false && (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#E8E6DF] bg-white p-6 sm:p-7 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#B79B62]/15 text-xl">
+              🎡
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-editorial text-xl font-semibold text-[#262A27]">
+                  Wheel of Songs
+                </h3>
+                <span className="rounded-full border border-[#B79B62]/40 bg-[#B79B62]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#7A6232]">
+                  Available
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-[#777B76]">
+                Spin a holiday wheel populated with your group's song submissions.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <Link
+              to={`/wheel/${groupId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#E8E6DF] bg-white px-3.5 py-2 text-xs font-medium text-[#262A27] hover:border-[#315B46] transition-colors"
+            >
+              Spectator Link ↗
+            </Link>
+            <Link
+              to={`/organizer/${groupId}/wheel${token ? `#token=${encodeURIComponent(token)}` : ''}`}
+              className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-5 py-2.5 text-xs sm:text-sm font-medium text-white hover:bg-[#274938] transition-colors"
+            >
+              Open Spin the Wheel
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Privacy Notice */}
       <div className="flex items-start gap-3 rounded-2xl border border-[#E8E6DF] bg-white p-5 text-sm text-[#777B76]">
@@ -607,6 +651,16 @@ export function OrganizerDashboard() {
                     <span>Require completed wishlist before draw</span>
                   </label>
                 )}
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#262A27]">
+                  <input
+                    type="checkbox"
+                    checked={editEnableWheel}
+                    onChange={(e) => setEditEnableWheel(e.target.checked)}
+                    className="rounded border-[#E8E6DF] text-[#315B46] focus:ring-[#315B46]"
+                  />
+                  <span>Enable Wheel of Songs</span>
+                </label>
               </div>
             </div>
 
@@ -643,6 +697,15 @@ export function OrganizerDashboard() {
 
         {/* Primary Action Buttons */}
         <div className="flex flex-wrap items-center gap-3">
+          {group.settings?.enableWheel !== false && (
+            <Link
+              to={`/organizer/${groupId}/wheel${token ? `#token=${encodeURIComponent(token)}` : ''}`}
+              className="inline-flex items-center gap-2 rounded-full border border-[#315B46] bg-white px-5 py-2.5 text-sm font-medium text-[#315B46] hover:bg-[#315B46]/5 transition-colors"
+            >
+              🎡 Open Spin the Wheel
+            </Link>
+          )}
+
           {(group.status === 'CREATED' || group.status === 'COLLECTING') && (
             <button
               type="button"

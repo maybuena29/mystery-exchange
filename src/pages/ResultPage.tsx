@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight,
   Calendar,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { LoadingScreen } from '../components/common/LoadingScreen';
 import { WishlistEditor } from '../components/wishlist/WishlistEditor';
+import { WheelWinBanner } from '../components/wheel/WheelWinBanner';
 import { participantService } from '../services/api';
 import type {
   GiftChecklist,
@@ -62,15 +63,13 @@ export function ResultPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+  const loadSession = useCallback(
+    async (showLoading = false) => {
+      if (showLoading) setLoading(true);
+      setError(null);
 
-    participantService
-      .getSession(privateToken)
-      .then((data) => {
-        if (cancelled) return;
+      try {
+        const data = await participantService.getSession(privateToken);
         if (data.group.status !== 'DRAWN' && data.group.status !== 'COMPLETED') {
           navigate(`/participant/${encodeURIComponent(privateToken)}`, { replace: true });
           return;
@@ -82,20 +81,34 @@ export function ResultPage() {
           setChecklist(data.giftProgress.checklist);
           setPrivateNotes(data.giftProgress.privateNotes);
         }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Unable to load your match.');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load your match.');
+      } finally {
+        if (showLoading) setLoading(false);
+      }
+    },
+    [privateToken, navigate]
+  );
+
+  useEffect(() => {
+    void loadSession(true);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadSession(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    const interval = setInterval(() => {
+      void loadSession(false);
+    }, 10000);
 
     return () => {
-      cancelled = true;
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(interval);
     };
-  }, [privateToken, navigate]);
+  }, [loadSession]);
 
   const handleSaveProgress = async (nextChecklist = checklist, nextNotes = privateNotes) => {
     setSavingProgress(true);
@@ -175,11 +188,29 @@ export function ResultPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 space-y-6">
+      {/* Winner Notification Banner if participant won */}
+      {session.wheelWins && session.wheelWins.length > 0 && (
+        <WheelWinBanner wins={session.wheelWins} groupId={group.groupId} />
+      )}
+
       {/* Top Event Meta */}
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#B79B62]/40 bg-[#B79B62]/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#7A6232] w-fit">
-          <Sparkles className="h-3.5 w-3.5 text-[#B79B62]" />
-          {group.groupName}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#B79B62]/40 bg-[#B79B62]/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#7A6232] w-fit">
+            <Sparkles className="h-3.5 w-3.5 text-[#B79B62]" />
+            {group.groupName}
+          </div>
+          {group.settings?.enableWheel !== false && (
+            <Link
+              to={`/wheel/${encodeURIComponent(group.groupId)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-full border border-[#B79B62]/40 bg-[#B79B62]/10 px-3.5 py-1 text-xs font-medium text-[#7A6232] hover:bg-[#B79B62]/20 transition-colors"
+              title="Watch live lucky draw wheel"
+            >
+              <span>🎡</span> Watch Live Wheel
+            </Link>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-4 text-xs text-[#777B76]">
           <span className="inline-flex items-center gap-1.5">

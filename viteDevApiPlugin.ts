@@ -10,6 +10,7 @@ import { handleRecoverLink } from './netlify/functions/recover-link.mts';
 import { handleStartDraw } from './netlify/functions/start-draw.mts';
 import { handleUpdateGiftProgress } from './netlify/functions/update-gift-progress.mts';
 import { handleUpdateWishlist } from './netlify/functions/update-wishlist.mts';
+import { handleWheel } from './netlify/functions/wheel.mts';
 
 /**
  * Vite development plugin that mounts Netlify Functions directly as Vite dev server middleware.
@@ -84,6 +85,12 @@ export function netlifyDevApiPlugin(): Plugin {
             webRes = await handleRecoverLink(webReq, clientIp);
           } else if (pathname === '/api/start-draw') {
             webRes = await handleStartDraw(webReq);
+          } else if (pathname.startsWith('/api/wheel/')) {
+            const subPath = pathname.replace('/api/wheel/', '');
+            const segments = subPath.split('/').filter(Boolean);
+            const groupId = segments[0] || '';
+            const action = segments[1] || '';
+            webRes = await handleWheel(webReq, groupId, action);
           } else if (pathname.startsWith('/api/admin')) {
             const segments = pathname.replace('/api/admin', '').split('/').filter(Boolean);
             const action = segments[0] || 'overview';
