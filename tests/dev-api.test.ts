@@ -86,5 +86,13 @@ describe('Vite Dev API Plugin', () => {
     const overviewData = JSON.parse(overviewBody);
     expect(overviewData.stats).toBeDefined();
     expect(Array.isArray(overviewData.groups)).toBe(true);
+
+    // Verify token verification handles sa_ prefix and surrounding quotes
+    const { verifySuperAdminToken } = await import('../netlify/functions/lib/crypto');
+    expect(verifySuperAdminToken(testAdminKey)).toBe(true);
+    expect(verifySuperAdminToken(`sa_${testAdminKey}`)).toBe(true);
+    expect(verifySuperAdminToken(`"${testAdminKey}"`)).toBe(true);
+    expect(verifySuperAdminToken(`sa_"${testAdminKey}"`)).toBe(true);
+    expect(verifySuperAdminToken('wrong-key')).toBe(false);
   });
 });

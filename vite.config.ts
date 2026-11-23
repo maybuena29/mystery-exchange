@@ -5,6 +5,35 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { netlifyDevApiPlugin } from './viteDevApiPlugin';
 
+// Load local .env into process.env so dev API middleware has access to environment variables
+function loadLocalEnv() {
+  const envFiles = [path.resolve(process.cwd(), '.env'), path.resolve(process.cwd(), '.env.local')];
+  for (const file of envFiles) {
+    if (fs.existsSync(file)) {
+      const content = fs.readFileSync(file, 'utf8');
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx !== -1) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if (
+            (val.startsWith('"') && val.endsWith('"')) ||
+            (val.startsWith("'") && val.endsWith("'"))
+          ) {
+            val = val.slice(1, -1);
+          }
+          if (!process.env[key]) {
+            process.env[key] = val;
+          }
+        }
+      }
+    }
+  }
+}
+loadLocalEnv();
+
 /**
  * Writes Netlify production security headers to dist/_headers on build,
  * so local Vite / netlify dev HMR inline scripts are not blocked by strict CSP.
