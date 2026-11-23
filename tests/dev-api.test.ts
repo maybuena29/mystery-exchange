@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { netlifyDevApiPlugin } from '../viteDevApiPlugin';
 import { EventEmitter } from 'node:events';
+import { getSuperAdminKey } from '../netlify/functions/lib/crypto';
 
 describe('Vite Dev API Plugin', () => {
   it('intercepts /api/admin/auth and responds with 200 without proxying', async () => {
     const plugin = netlifyDevApiPlugin();
     let middleware: any;
+    const testAdminKey = getSuperAdminKey();
 
     const fakeServer = {
       middlewares: {
@@ -24,7 +26,7 @@ describe('Vite Dev API Plugin', () => {
       method: 'GET',
       headers: {
         host: 'localhost:5173',
-        authorization: 'Bearer hulawho-super-admin-2026',
+        authorization: `Bearer ${testAdminKey}`,
       },
     });
 
@@ -60,7 +62,7 @@ describe('Vite Dev API Plugin', () => {
       method: 'GET',
       headers: {
         host: 'localhost:5173',
-        authorization: 'Bearer hulawho-super-admin-2026',
+        authorization: `Bearer ${testAdminKey}`,
       },
     });
 

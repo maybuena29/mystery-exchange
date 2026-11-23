@@ -10,6 +10,7 @@ import { handleRecoverLink } from '../netlify/functions/recover-link.mts';
 import { handleStartDraw } from '../netlify/functions/start-draw.mts';
 import { handleUpdateGiftProgress } from '../netlify/functions/update-gift-progress.mts';
 import { handleUpdateWishlist } from '../netlify/functions/update-wishlist.mts';
+import { getSuperAdminKey } from '../netlify/functions/lib/crypto';
 import type {
   AdminOverviewResponse,
   CreateGroupResponse,
@@ -459,7 +460,7 @@ describe('Mystery Exchange End-to-End API & Security', () => {
   });
 
   it('super admin portal: authenticates, lists all groups, views platform reports, and grants organizer access', async () => {
-    const superAdminKey = process.env.SUPER_ADMIN_KEY || 'hulawho-super-admin-2026';
+    const superAdminKey = getSuperAdminKey();
 
     // 1. Rejects unauthorized access
     const noKeyRes = await handleAdmin(
@@ -786,7 +787,7 @@ describe('Mystery Exchange End-to-End API & Security', () => {
     expect(draw1.status).toBe(200);
 
     // 2. Super Admin resets status back to READY
-    const superAdminKey = process.env.SUPER_ADMIN_KEY || 'hulawho-super-admin-2026';
+    const superAdminKey = getSuperAdminKey();
     const resetRes = await handleAdmin(
       jsonReq(`http://localhost/api/admin/update_status/${groupId}`, 'POST', { status: 'READY' }, superAdminKey),
       'update_status',
