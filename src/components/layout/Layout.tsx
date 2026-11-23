@@ -65,11 +65,14 @@ export function Layout({ children }: LayoutProps) {
             <NavLink to="/how-it-works" className={navLinkClass}>
               How It Works
             </NavLink>
-            <NavLink to="/privacy" className={navLinkClass}>
-              Privacy
-            </NavLink>
             <NavLink to="/join" className={navLinkClass}>
               Join Exchange
+            </NavLink>
+            <NavLink to="/recover" className={navLinkClass}>
+              Recover Link
+            </NavLink>
+            <NavLink to="/privacy" className={navLinkClass}>
+              Privacy
             </NavLink>
             <Link
               to="/create"
@@ -101,18 +104,25 @@ export function Layout({ children }: LayoutProps) {
                 How It Works
               </NavLink>
               <NavLink
-                to="/privacy"
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm text-[#262A27] hover:bg-[#F8F7F3]"
-              >
-                Privacy
-              </NavLink>
-              <NavLink
                 to="/join"
                 onClick={() => setMobileOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm text-[#262A27] hover:bg-[#F8F7F3]"
               >
                 Join Exchange
+              </NavLink>
+              <NavLink
+                to="/recover"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm text-[#262A27] hover:bg-[#F8F7F3]"
+              >
+                Recover Lost Link
+              </NavLink>
+              <NavLink
+                to="/privacy"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm text-[#262A27] hover:bg-[#F8F7F3]"
+              >
+                Privacy
               </NavLink>
               <Link
                 to="/create"
@@ -139,9 +149,12 @@ export function Layout({ children }: LayoutProps) {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 text-sm text-[#777B76]">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-[#777B76]">
             <Link to="/how-it-works" className="hover:text-[#262A27] transition-colors">
               How It Works
+            </Link>
+            <Link to="/recover" className="hover:text-[#262A27] transition-colors">
+              Recover Link
             </Link>
             <Link to="/privacy" className="hover:text-[#262A27] transition-colors">
               Privacy

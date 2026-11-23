@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Copy,
   Download,
+  Edit3,
   ExternalLink,
   Eye,
   EyeOff,
@@ -34,6 +35,7 @@ import {
 import type {
   AdminGroupSummary,
   AdminOverviewResponse,
+  EventStatus,
 } from '../types/exchange';
 import { formatBudget, formatDate } from '../utils/format';
 
@@ -64,6 +66,11 @@ export function SuperAdminPage() {
   const [inspectGroup, setInspectGroup] = useState<AdminGroupSummary | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<AdminGroupSummary | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Status Change Modal
+  const [statusModalGroup, setStatusModalGroup] = useState<AdminGroupSummary | null>(null);
+  const [targetStatus, setTargetStatus] = useState<EventStatus>('DRAWN');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Toast notifications
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -146,6 +153,42 @@ export function SuperAdminPage() {
       alert(err instanceof Error ? err.message : 'Failed to delete group.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const openStatusModal = (g: AdminGroupSummary) => {
+    setStatusModalGroup(g);
+    setTargetStatus(g.status);
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if (!statusModalGroup || !adminKey) return;
+    setIsUpdatingStatus(true);
+    try {
+      const res = await adminService.updateGroupStatus(
+        statusModalGroup.groupId,
+        targetStatus,
+        adminKey
+      );
+      showToast(res.message);
+      setOverview((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          groups: prev.groups.map((g) =>
+            g.groupId === statusModalGroup.groupId ? { ...g, status: targetStatus } : g
+          ),
+        };
+      });
+      setInspectGroup((prev) =>
+        prev?.groupId === statusModalGroup.groupId ? { ...prev, status: targetStatus } : prev
+      );
+      setStatusModalGroup(null);
+      void loadOverview(adminKey, true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update group status.');
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -605,16 +648,121 @@ export function SuperAdminPage() {
             </div>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-[#E8E6DF] bg-white shadow-2xs">
-              <div className="overflow-x-auto">
+              {/* Mobile Card List View */}
+              <div className="block md:hidden divide-y divide-[#E8E6DF]">
+                {filteredGroups.map((g) => {
+                  const fullInvite = typeof window !== 'undefined' ? `${window.location.origin}${g.invitationUrl}` : g.invitationUrl;
+                  const fullOrganizer = typeof window !== 'undefined' ? `${window.location.origin}${g.organizerUrl}` : g.organizerUrl;
+
+                  return (
+                    <div key={g.groupId} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-sm text-[#262A27] truncate">
+                            {g.groupName}
+                          </h4>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[#777B76]">
+                            <span className="rounded-sm bg-[#E8E6DF] px-1.5 py-0.5 font-mono text-[10px]">
+                              {g.groupId}
+                            </span>
+                            <span>·</span>
+                            <span>{g.category}</span>
+                            <span>·</span>
+                            <span>{g.createdAt ? formatDate(g.createdAt) : ''}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <StatusBadge status={g.status} />
+                          <button
+                            type="button"
+                            onClick={() => openStatusModal(g)}
+                            className="inline-flex items-center gap-1 rounded-md border border-[#E8E6DF] bg-white px-2 py-0.5 text-[11px] font-medium text-[#262A27] hover:border-[#315B46] hover:text-[#315B46] transition-colors"
+                            title="Change event status"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                            <span>Change</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-[#F8F7F3] p-2.5 rounded-xl">
+                        <div>
+                          <span className="text-[#777B76] text-[10px] block">Participants</span>
+                          <span className="font-medium text-[#262A27]">
+                            {g.participantCount} joined ({g.completedWishlistCount} ready)
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#777B76] text-[10px] block">Budget &amp; Date</span>
+                          <span className="font-medium text-[#262A27]">
+                            {formatBudget(g.budget)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(fullInvite, 'Invite link')}
+                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border border-[#E8E6DF] bg-white py-1.5 px-2 text-xs font-medium text-[#262A27] hover:bg-[#F8F7F3]"
+                        >
+                          <Copy className="h-3 w-3 text-[#777B76]" />
+                          <span>Invite</span>
+                        </button>
+
+                        <a
+                          href={g.organizerUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-[#315B46] py-1.5 px-2 text-xs font-medium text-white hover:bg-[#274938]"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          <span>Organizer</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(fullOrganizer, 'Organizer master link')}
+                          className="p-1.5 rounded-lg border border-[#E8E6DF] text-[#777B76] hover:bg-[#F8F7F3]"
+                          title="Copy organizer master URL"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setInspectGroup(g)}
+                          className="p-1.5 rounded-lg border border-[#E8E6DF] text-[#315B46] hover:bg-[#315B46]/10"
+                          title="Inspect details"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setGroupToDelete(g)}
+                          className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+                          title="Delete group"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="border-b border-[#E8E6DF] bg-[#F8F7F3] font-semibold text-[#777B76] uppercase tracking-wider text-[10px]">
                     <tr>
                       <th className="px-4 py-3">Group Details</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Participants</th>
-                      <th className="px-4 py-3">Event & Budget</th>
+                      <th className="px-4 py-3">Event &amp; Budget</th>
                       <th className="px-4 py-3">Created</th>
-                      <th className="px-4 py-3 text-right">Links & Actions</th>
+                      <th className="px-4 py-3 text-right">Links &amp; Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E8E6DF]">
@@ -642,7 +790,18 @@ export function SuperAdminPage() {
 
                           {/* Status */}
                           <td className="px-4 py-3.5 whitespace-nowrap">
-                            <StatusBadge status={g.status} />
+                            <div className="flex items-center gap-2">
+                              <StatusBadge status={g.status} />
+                              <button
+                                type="button"
+                                onClick={() => openStatusModal(g)}
+                                className="inline-flex items-center gap-1 rounded-md border border-[#E8E6DF] bg-white px-2 py-0.5 text-[11px] font-medium text-[#262A27] hover:border-[#315B46] hover:text-[#315B46] transition-colors"
+                                title="Change event status"
+                              >
+                                <Edit3 className="h-3 w-3" />
+                                <span>Change</span>
+                              </button>
+                            </div>
                           </td>
 
                           {/* Participants Progress */}
@@ -991,8 +1150,19 @@ export function SuperAdminPage() {
                   <span className="font-medium text-[#262A27]">{inspectGroup.category}</span>
                 </div>
                 <div>
-                  <span className="text-[#777B76] block">Status</span>
-                  <span className="font-medium text-[#262A27]">{inspectGroup.status}</span>
+                  <span className="text-[#777B76] block mb-1">Status</span>
+                  <div className="flex items-center gap-1.5">
+                    <StatusBadge status={inspectGroup.status} />
+                    <button
+                      type="button"
+                      onClick={() => openStatusModal(inspectGroup)}
+                      className="inline-flex items-center gap-1 rounded-md border border-[#E8E6DF] bg-white px-2 py-0.5 text-[11px] font-medium text-[#262A27] hover:border-[#315B46] hover:text-[#315B46] transition-colors"
+                      title="Change status"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                      <span>Change</span>
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <span className="text-[#777B76] block">Budget</span>
@@ -1101,6 +1271,109 @@ export function SuperAdminPage() {
                 className="rounded-full px-4 py-1.5 text-xs font-medium text-[#777B76] hover:text-[#262A27]"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CHANGE STATUS MODAL */}
+      {statusModalGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+            onClick={() => !isUpdatingStatus && setStatusModalGroup(null)}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-[#E8E6DF] bg-white p-6 shadow-xl space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#315B46]">
+                  Super Admin Override
+                </span>
+                <h3 className="font-editorial text-xl font-semibold text-[#262A27]">
+                  Change Event Status
+                </h3>
+              </div>
+              <button
+                type="button"
+                disabled={isUpdatingStatus}
+                onClick={() => setStatusModalGroup(null)}
+                className="p-1 rounded-lg text-[#777B76] hover:bg-[#F8F7F3]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-[#E8E6DF] bg-[#F8F7F3] p-3.5 space-y-1 text-xs">
+              <span className="text-[#777B76] block">Target Group</span>
+              <p className="font-semibold text-sm text-[#262A27] truncate">
+                {statusModalGroup.groupName}
+              </p>
+              <p className="font-mono text-[11px] text-[#777B76]">
+                ID: {statusModalGroup.groupId}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-[#777B76]">
+                Current Status
+              </label>
+              <div>
+                <StatusBadge status={statusModalGroup.status} />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-[#262A27]">
+                Select New Status
+              </label>
+              <select
+                value={targetStatus}
+                disabled={isUpdatingStatus}
+                onChange={(e) => setTargetStatus(e.target.value as EventStatus)}
+                className="w-full rounded-xl border border-[#E8E6DF] bg-white px-3 py-2.5 text-xs font-medium text-[#262A27] focus:border-[#315B46] focus:outline-hidden"
+              >
+                <option value="CREATED">CREATED — Initial event created</option>
+                <option value="COLLECTING">COLLECTING — Open for joins &amp; wishlist entries</option>
+                <option value="REGISTRATION_CLOSED">REGISTRATION_CLOSED — Participant joins locked</option>
+                <option value="READY">READY — All participants ready for secret draw</option>
+                <option value="LOCKED">LOCKED — Draw executing</option>
+                <option value="DRAWN">DRAWN — Mystery matches revealed to participants</option>
+                <option value="COMPLETED">COMPLETED — Event concluded</option>
+                <option value="CANCELLED">CANCELLED — Exchange cancelled</option>
+              </select>
+            </div>
+
+            <div className="rounded-xl border border-[#315B46]/20 bg-[#315B46]/5 p-3 text-xs text-[#262A27] space-y-1">
+              <p className="font-semibold text-[#315B46]">Status Behavior:</p>
+              <p className="text-[#777B76] leading-relaxed">
+                Selecting <span className="font-semibold text-[#262A27]">DRAWN</span> lets participants reveal their mystery matches and edit wishlists (if allowed). Selecting <span className="font-semibold text-[#262A27]">COMPLETED</span> marks the exchange finished. No changes are saved until you click the update button below.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#E8E6DF]">
+              <button
+                type="button"
+                disabled={isUpdatingStatus}
+                onClick={() => setStatusModalGroup(null)}
+                className="rounded-full px-4 py-2 text-xs font-medium text-[#777B76] hover:text-[#262A27] hover:bg-[#F8F7F3]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isUpdatingStatus || targetStatus === statusModalGroup.status}
+                onClick={() => void handleConfirmStatusChange()}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#315B46] px-5 py-2 text-xs font-semibold text-white hover:bg-[#274938] disabled:opacity-40 transition-colors shadow-2xs"
+              >
+                {isUpdatingStatus ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Updating Status...</span>
+                  </>
+                ) : (
+                  <span>Update Main Event Status</span>
+                )}
               </button>
             </div>
           </div>

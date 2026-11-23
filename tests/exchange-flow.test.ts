@@ -277,6 +277,27 @@ describe('Mystery Exchange End-to-End API & Security', () => {
     expect(JSON.stringify(drawBody)).not.toContain('Thoughtful Gift');
     expect(JSON.stringify(drawBody)).not.toContain('recipientParticipantId');
 
+    // Organizer can still edit group details and settings after the draw has finalized
+    const postDrawEditRes = await handleOrganizerGroup(
+      jsonReq(
+        `http://localhost/api/organizer/${groupId}`,
+        'PATCH',
+        {
+          action: 'update_details',
+          instructions: 'Bring your gift wrapped in Christmas colors to church on Sunday!',
+          budget: { amount: 600, currency: 'PHP' },
+          settings: { allowEditAfterDraw: true },
+        },
+        organizerToken
+      ),
+      groupId
+    );
+    expect(postDrawEditRes.status).toBe(200);
+    const postDrawEditBody = (await postDrawEditRes.json()) as { group: OrganizerGroupView };
+    expect(postDrawEditBody.group.instructions).toContain('Bring your gift wrapped');
+    expect(postDrawEditBody.group.budget.amount).toBe(600);
+    expect(postDrawEditBody.group.settings.allowEditAfterDraw).toBe(true);
+
     // 5. All 10 participants open their private results
     const assignedRecipients = new Set<string>();
     for (const p of participants) {
@@ -527,7 +548,26 @@ describe('Mystery Exchange End-to-End API & Security', () => {
     const { group: superOrgGroup } = (await superAdminOrgRes.json()) as { group: OrganizerGroupView };
     expect(superOrgGroup.groupName).toBe('JIL Worship Team Exchange');
 
-    // 6. Super Admin can delete a group (e.g. test group gId2)
+    // 6. Super Admin can change group status (e.g. to COMPLETED, and from COMPLETED back to DRAWN)
+    const statusRes1 = await handleAdmin(
+      jsonReq(`http://localhost/api/admin/update_status/${gId1}`, 'POST', { status: 'COMPLETED' }, superAdminKey),
+      'update_status',
+      gId1
+    );
+    expect(statusRes1.status).toBe(200);
+    const statusData1 = (await statusRes1.json()) as { ok: boolean; status: string };
+    expect(statusData1.status).toBe('COMPLETED');
+
+    const statusRes2 = await handleAdmin(
+      jsonReq(`http://localhost/api/admin/update_status/${gId1}`, 'POST', { status: 'DRAWN' }, superAdminKey),
+      'update_status',
+      gId1
+    );
+    expect(statusRes2.status).toBe(200);
+    const statusData2 = (await statusRes2.json()) as { ok: boolean; status: string };
+    expect(statusData2.status).toBe('DRAWN');
+
+    // 7. Super Admin can delete a group (e.g. test group gId2)
     const deleteRes = await handleAdmin(
       jsonReq(`http://localhost/api/admin/delete_group/${gId2}`, 'DELETE', undefined, superAdminKey),
       'delete_group',
@@ -543,5 +583,231 @@ describe('Mystery Exchange End-to-End API & Security', () => {
     const afterDelData = (await overviewAfterDel.json()) as AdminOverviewResponse;
     expect(afterDelData.stats.totalGroups).toBe(1);
     expect(afterDelData.groups.find((g) => g.groupId === gId2)).toBeUndefined();
+  });
+
+  it('enforces post-draw wishlist lock: allows editing and adding, allows deleting newly added items, but blocks deleting pre-draw items', async () => {
+    // 1. Create group with allowEditAfterDraw: true
+    const createRes = await handleCreateGroup(
+      jsonReq('http://localhost/api/create-group', 'POST', {
+        groupName: 'Post-Draw Wishlist Lock Test',
+        category: 'Christmas',
+        budget: { amount: 500, currency: 'PHP' },
+        settings: {
+          maxParticipants: 10,
+          maxWishlistItems: 10,
+          allowEditBeforeDraw: true,
+          allowEditAfterDraw: true,
+          requireCompletedWishlist: true,
+        },
+      })
+    );
+    expect(createRes.status).toBe(201);
+    const { groupId, organizerToken } = (await createRes.json()) as CreateGroupResponse;
+
+    // 2. Add 3 participants with initial wishlist items
+    const p1Res = await handleJoinGroup(
+      jsonReq('http://localhost/api/join-group', 'POST', {
+        groupId,
+        songTitle: '10,000 Reasons',
+        wishlist: [
+          {
+            name: 'Original Journal',
+            description: 'Leather bound',
+            category: 'Books',
+            priority: 'must_have',
+          },
+        ],
+      })
+    );
+    expect(p1Res.status).toBe(201);
+    const p1 = (await p1Res.json()) as JoinGroupResponse;
+
+    const p2Res = await handleJoinGroup(
+      jsonReq('http://localhost/api/join-group', 'POST', {
+        groupId,
+        songTitle: 'Way Maker',
+        wishlist: [
+          {
+            name: 'Coffee Mug',
+            description: 'Ceramic',
+            category: 'Home',
+            priority: 'nice_to_have',
+          },
+        ],
+      })
+    );
+    expect(p2Res.status).toBe(201);
+
+    const p3Res = await handleJoinGroup(
+      jsonReq('http://localhost/api/join-group', 'POST', {
+        groupId,
+        songTitle: 'Goodness of God',
+        wishlist: [
+          {
+            name: 'Worship Playlist Gift Card',
+            description: 'Spotify or Apple Music',
+            category: 'Hobbies',
+            priority: 'must_have',
+          },
+        ],
+      })
+    );
+    expect(p3Res.status).toBe(201);
+
+    // Close registration before drawing
+    const closeRes = await handleOrganizerGroup(
+      jsonReq(
+        `http://localhost/api/organizer/${groupId}`,
+        'PATCH',
+        { action: 'close_registration' },
+        organizerToken
+      ),
+      groupId
+    );
+    expect(closeRes.status).toBe(200);
+
+    // 3. Start the draw
+    const drawRes = await handleStartDraw(
+      jsonReq('http://localhost/api/start-draw', 'POST', { groupId }, organizerToken)
+    );
+    expect(drawRes.status).toBe(200);
+
+    // 4. Inspect participant 1 session post-draw
+    const sessionRes = await handleParticipantSession(
+      jsonReq('http://localhost/api/participant/session', 'GET', undefined, p1.privateToken)
+    );
+    expect(sessionRes.status).toBe(200);
+    const { session } = (await sessionRes.json()) as { session: ParticipantSessionView };
+    expect(session.canEditWishlist).toBe(true);
+    expect(session.wishlist).toHaveLength(1);
+    const originalItem = session.wishlist[0];
+    expect(originalItem.name).toBe('Original Journal');
+    expect(session.lockedWishlistItemIds).toContain(originalItem.id);
+
+    // 5. Attempting to delete the original pre-draw item by submitting an empty wishlist should fail with 400
+    const deleteOriginalRes = await handleUpdateWishlist(
+      jsonReq(
+        'http://localhost/api/participant/wishlist',
+        'PUT',
+        { wishlist: [], preferences: {} },
+        p1.privateToken
+      )
+    );
+    expect(deleteOriginalRes.status).toBe(400);
+    const deleteOriginalError = (await deleteOriginalRes.json()) as { error: string };
+    expect(deleteOriginalError.error).toContain('cannot be deleted');
+
+    // 6. Editing the original item (changing price, notes, description) and adding a new item should succeed
+    const editedOriginalItem = {
+      ...originalItem,
+      name: 'Original Journal (Updated Edition)',
+      description: 'Navy blue leather bound with gold ribbon',
+      estimatedPrice: 350,
+    };
+    const newItemId = `item_new_${Date.now()}`;
+    const newItem = {
+      id: newItemId,
+      name: 'Fountain Pen',
+      description: 'Black ink refillable',
+      category: 'Hobbies' as const,
+      priority: 'nice_to_have' as const,
+      order: 1,
+    };
+
+    const updateRes = await handleUpdateWishlist(
+      jsonReq(
+        'http://localhost/api/participant/wishlist',
+        'PUT',
+        {
+          wishlist: [editedOriginalItem, newItem],
+          preferences: { hobbies: 'Reading & writing' },
+        },
+        p1.privateToken
+      )
+    );
+    expect(updateRes.status).toBe(200);
+    const updatedData = (await updateRes.json()) as {
+      wishlist: typeof session.wishlist;
+      lockedWishlistItemIds?: string[];
+    };
+    expect(updatedData.wishlist).toHaveLength(2);
+    expect(updatedData.wishlist[0].name).toBe('Original Journal (Updated Edition)');
+    expect(updatedData.wishlist[1].name).toBe('Fountain Pen');
+    expect(updatedData.lockedWishlistItemIds).toContain(originalItem.id);
+
+    // 7. Deleting the newly added item while keeping the original locked item should succeed
+    const deleteNewItemRes = await handleUpdateWishlist(
+      jsonReq(
+        'http://localhost/api/participant/wishlist',
+        'PUT',
+        {
+          wishlist: [editedOriginalItem],
+          preferences: { hobbies: 'Reading & writing' },
+        },
+        p1.privateToken
+      )
+    );
+    expect(deleteNewItemRes.status).toBe(200);
+    const afterDeleteNewData = (await deleteNewItemRes.json()) as { wishlist: typeof session.wishlist };
+    expect(afterDeleteNewData.wishlist).toHaveLength(1);
+    expect(afterDeleteNewData.wishlist[0].id).toBe(originalItem.id);
+    expect(afterDeleteNewData.wishlist[0].name).toBe('Original Journal (Updated Edition)');
+  });
+
+  it('allows Super Admin to reset a drawn group to READY and redraw cleanly', async () => {
+    const createRes = await handleCreateGroup(
+      jsonReq('http://localhost/api/create-group', 'POST', {
+        groupName: 'Redraw Test',
+        budget: { amount: 500, currency: 'PHP' },
+        settings: { maxParticipants: 5 },
+      })
+    );
+    const { groupId, organizerToken } = (await createRes.json()) as CreateGroupResponse;
+
+    for (const song of ['Song Alpha', 'Song Beta', 'Song Gamma']) {
+      await handleJoinGroup(
+        jsonReq('http://localhost/api/join-group', 'POST', {
+          groupId,
+          songTitle: song,
+          wishlist: [{ name: `Gift for ${song}`, description: '', category: 'Other', priority: 'nice_to_have' }],
+        })
+      );
+    }
+
+    await handleOrganizerGroup(
+      jsonReq(`http://localhost/api/organizer/${groupId}`, 'PATCH', { action: 'close_registration' }, organizerToken),
+      groupId
+    );
+
+    // 1. Initial draw
+    const draw1 = await handleStartDraw(
+      jsonReq('http://localhost/api/start-draw', 'POST', { groupId }, organizerToken)
+    );
+    expect(draw1.status).toBe(200);
+
+    // 2. Super Admin resets status back to READY
+    const superAdminKey = process.env.SUPER_ADMIN_KEY || 'hulawho-super-admin-2026';
+    const resetRes = await handleAdmin(
+      jsonReq(`http://localhost/api/admin/update_status/${groupId}`, 'POST', { status: 'READY' }, superAdminKey),
+      'update_status',
+      groupId
+    );
+    expect(resetRes.status).toBe(200);
+
+    // 3. Re-draw must succeed cleanly without "A draw is already in progress or has been finalized" error
+    const draw2 = await handleStartDraw(
+      jsonReq('http://localhost/api/start-draw', 'POST', { groupId }, organizerToken)
+    );
+    expect(draw2.status).toBe(200);
+    const draw2Data = (await draw2.json()) as { group: OrganizerGroupView };
+    expect(draw2Data.group.status).toBe('DRAWN');
+
+    // 4. Organizer can re-draw directly from organizer dashboard using { redraw: true }
+    const redrawRes = await handleStartDraw(
+      jsonReq('http://localhost/api/start-draw', 'POST', { groupId, redraw: true }, organizerToken)
+    );
+    expect(redrawRes.status).toBe(200);
+    const redrawData = (await redrawRes.json()) as { group: OrganizerGroupView };
+    expect(redrawData.group.status).toBe('DRAWN');
   });
 });

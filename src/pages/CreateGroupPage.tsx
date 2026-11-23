@@ -144,10 +144,10 @@ export function CreateGroupPage() {
             <CopyShareActions url={organizerUrl} copyLabel="Copy Management Link" compact />
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
             <Link
               to={`/organizer/${created.groupId}#token=${encodeURIComponent(created.organizerToken)}`}
-              className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-6 py-3 text-sm font-medium text-white hover:bg-[#274938]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#315B46] px-6 py-3 text-sm font-medium text-white hover:bg-[#274938]"
             >
               Open Organizer Dashboard
               <ArrowRight className="h-4 w-4" />
@@ -422,7 +422,7 @@ export function CreateGroupPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-8 py-3.5 text-sm font-medium text-white transition-colors hover:bg-[#274938] disabled:opacity-50"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#315B46] px-8 py-3.5 text-sm font-medium text-white transition-colors hover:bg-[#274938] disabled:opacity-50"
           >
             {submitting ? 'Creating Exchange...' : 'Create Exchange'}
             <ArrowRight className="h-4 w-4" />

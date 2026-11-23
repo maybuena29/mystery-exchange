@@ -47,9 +47,13 @@ export function OrganizerDashboard() {
   const [editDate, setEditDate] = useState('');
   const [editBudget, setEditBudget] = useState('');
   const [editInstructions, setEditInstructions] = useState('');
+  const [editAllowAfterDraw, setEditAllowAfterDraw] = useState(false);
+  const [editMaxItems, setEditMaxItems] = useState(20);
+  const [editRequireWishlist, setEditRequireWishlist] = useState(false);
 
   // Confirmation modals
   const [drawModalOpen, setDrawModalOpen] = useState(false);
+  const [redrawModalOpen, setRedrawModalOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [slotToRemove, setSlotToRemove] = useState<AnonymousSlot | null>(null);
@@ -66,6 +70,9 @@ export function OrganizerDashboard() {
         setEditDate(data.eventDate ?? '');
         setEditBudget(data.budget.amount !== undefined ? String(data.budget.amount) : '');
         setEditInstructions(data.instructions ?? '');
+        setEditAllowAfterDraw(data.settings?.allowEditAfterDraw ?? false);
+        setEditMaxItems(data.settings?.maxWishlistItems ?? 20);
+        setEditRequireWishlist(data.settings?.requireCompletedWishlist ?? false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load organizer dashboard.');
       } finally {
@@ -116,15 +123,21 @@ export function OrganizerDashboard() {
     await runAction(
       {
         action: 'update_details',
-        groupName: editName,
-        eventDate: editDate,
-        instructions: editInstructions,
+        groupName: editName.trim(),
+        eventDate: editDate || undefined,
+        instructions: editInstructions.trim() || undefined,
         budget: {
           ...group.budget,
           amount: editBudget.trim() === '' ? undefined : Number(editBudget),
         },
+        settings: {
+          ...group.settings,
+          allowEditAfterDraw: editAllowAfterDraw,
+          maxWishlistItems: Number(editMaxItems) || 20,
+          requireCompletedWishlist: editRequireWishlist,
+        },
       },
-      'Exchange details updated.'
+      'Exchange details and settings updated successfully.'
     );
     setEditing(false);
   };
@@ -160,6 +173,26 @@ export function OrganizerDashboard() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete draw.');
       setDrawModalOpen(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRedraw = async () => {
+    if (!token) return;
+    setBusy(true);
+    setError(null);
+    setActionMsg(null);
+    try {
+      const updated = await groupService.redraw(groupId, token);
+      setGroup(updated);
+      setRedrawModalOpen(false);
+      setActionMsg(
+        'Re-draw complete! All participants have been reshuffled and assigned brand new mystery matches.'
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to complete re-draw.');
+      setRedrawModalOpen(false);
     } finally {
       setBusy(false);
     }
@@ -234,6 +267,7 @@ export function OrganizerDashboard() {
     group.status !== 'LOCKED' &&
     group.status !== 'COMPLETED' &&
     group.status !== 'CANCELLED';
+  const canEditDetails = group.status !== 'CANCELLED' && group.status !== 'LOCKED';
   const progressPct = Math.min(
     100,
     Math.round((group.participantCount / group.settings.maxParticipants) * 100)
@@ -486,19 +520,19 @@ export function OrganizerDashboard() {
             </p>
           </div>
 
-          {isBeforeDraw && (
+          {canEditDetails && (
             <button
               type="button"
               onClick={() => setEditing((prev) => !prev)}
               className="inline-flex items-center gap-2 rounded-full border border-[#E8E6DF] px-4 py-2 text-xs font-medium text-[#262A27] hover:border-[#315B46]"
             >
               <Edit3 className="h-3.5 w-3.5" />
-              {editing ? 'Close Editor' : 'Edit Details'}
+              {editing ? 'Close Editor' : 'Edit Details & Settings'}
             </button>
           )}
         </div>
 
-        {editing && isBeforeDraw && (
+        {editing && canEditDetails && (
           <form
             onSubmit={handleSaveDetails}
             className="rounded-xl border border-[#E8E6DF] bg-[#F8F7F3] p-5 space-y-4"
@@ -545,11 +579,49 @@ export function OrganizerDashboard() {
                 className="w-full rounded-xl border border-[#E8E6DF] bg-white px-3 py-2 text-sm"
               />
             </div>
-            <div className="flex justify-end">
+
+            {/* Group Settings */}
+            <div className="border-t border-[#E8E6DF] pt-3 space-y-3">
+              <span className="block text-xs font-semibold uppercase tracking-wider text-[#777B76]">
+                Exchange Settings
+              </span>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#262A27]">
+                  <input
+                    type="checkbox"
+                    checked={editAllowAfterDraw}
+                    onChange={(e) => setEditAllowAfterDraw(e.target.checked)}
+                    className="rounded border-[#E8E6DF] text-[#315B46] focus:ring-[#315B46]"
+                  />
+                  <span>Allow participants to edit wishlists after draw</span>
+                </label>
+
+                {isBeforeDraw && (
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-[#262A27]">
+                    <input
+                      type="checkbox"
+                      checked={editRequireWishlist}
+                      onChange={(e) => setEditRequireWishlist(e.target.checked)}
+                      className="rounded border-[#E8E6DF] text-[#315B46] focus:ring-[#315B46]"
+                    />
+                    <span>Require completed wishlist before draw</span>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="rounded-full border border-[#E8E6DF] px-4 py-2 text-xs font-medium text-[#777B76] hover:text-[#262A27]"
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-full bg-[#315B46] px-5 py-2 text-xs font-medium text-white hover:bg-[#274938]"
+                className="rounded-full bg-[#315B46] px-5 py-2 text-xs font-medium text-white hover:bg-[#274938] disabled:opacity-50"
               >
                 Save Changes
               </button>
@@ -619,7 +691,7 @@ export function OrganizerDashboard() {
                   onClick={() =>
                     void runAction({ action: 'complete_event' }, 'Exchange marked as completed.')
                   }
-                  className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#274938]"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#274938] transition-colors"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Mark Event Completed
@@ -628,8 +700,18 @@ export function OrganizerDashboard() {
               <button
                 type="button"
                 disabled={busy}
+                onClick={() => setRedrawModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-[#B79B62] bg-[#B79B62]/10 px-5 py-2.5 text-sm font-medium text-[#7A6232] hover:bg-[#B79B62]/20 disabled:opacity-50 transition-colors shadow-2xs"
+                title="Reshuffle assignments for all participants"
+              >
+                <Sparkles className="h-4 w-4 text-[#B79B62]" />
+                Re-Draw Matches
+              </button>
+              <button
+                type="button"
+                disabled={busy}
                 onClick={() => setResetModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#874B4B]/30 px-4 py-2.5 text-xs font-medium text-[#874B4B] hover:bg-[#874B4B]/10 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#874B4B]/30 px-4 py-2.5 text-xs font-medium text-[#874B4B] hover:bg-[#874B4B]/10 disabled:opacity-50 transition-colors"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Reset &amp; Start Over
@@ -671,6 +753,16 @@ export function OrganizerDashboard() {
         isLoading={busy}
         onConfirm={() => void handleStartDraw()}
         onCancel={() => setDrawModalOpen(false)}
+      />
+
+      <ConfirmModal
+        isOpen={redrawModalOpen}
+        title="Reshuffle & Re-Draw Matches?"
+        message="This will reshuffle all participant pairings and generate brand new secret assignments. All existing participants, submitted songs, and wishlists are preserved. Participants can reopen their private links to reveal their new match."
+        confirmLabel={busy ? 'Reshuffling...' : 'Reshuffle & Re-Draw'}
+        isLoading={busy}
+        onConfirm={() => void handleRedraw()}
+        onCancel={() => setRedrawModalOpen(false)}
       />
 
       <ConfirmModal

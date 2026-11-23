@@ -2,6 +2,7 @@ import type {
   AdminOverviewResponse,
   CreateGroupPayload,
   CreateGroupResponse,
+  EventStatus,
   GiftProgress,
   JoinGroupPayload,
   JoinGroupResponse,
@@ -77,16 +78,24 @@ export const groupService = {
     return res.group;
   },
 
-  async startDraw(groupId: string, organizerToken: string): Promise<OrganizerGroupView> {
+  async startDraw(
+    groupId: string,
+    organizerToken: string,
+    options?: { redraw?: boolean }
+  ): Promise<OrganizerGroupView> {
     const res = await requestJson<{ group: OrganizerGroupView }>(
       '/api/start-draw',
       {
         method: 'POST',
-        body: JSON.stringify({ groupId }),
+        body: JSON.stringify({ groupId, redraw: options?.redraw ?? false }),
       },
       organizerToken
     );
     return res.group;
+  },
+
+  async redraw(groupId: string, organizerToken: string): Promise<OrganizerGroupView> {
+    return this.startDraw(groupId, organizerToken, { redraw: true });
   },
 
   async regenerateParticipantLink(
@@ -126,7 +135,12 @@ export const participantService = {
     privateToken: string,
     wishlist: WishlistItem[],
     preferences: ParticipantPreferences
-  ): Promise<{ wishlist: WishlistItem[]; preferences: ParticipantPreferences; wishlistCompleted: boolean }> {
+  ): Promise<{
+    wishlist: WishlistItem[];
+    preferences: ParticipantPreferences;
+    wishlistCompleted: boolean;
+    lockedWishlistItemIds?: string[];
+  }> {
     return requestJson(
       '/api/participant/wishlist',
       {
@@ -184,6 +198,21 @@ export const adminService = {
     return requestJson<{ ok: boolean; message: string; groupId: string }>(
       `/api/admin/delete_group/${encodeURIComponent(groupId)}`,
       { method: 'DELETE' },
+      adminKey
+    );
+  },
+
+  async updateGroupStatus(
+    groupId: string,
+    status: EventStatus,
+    adminKey: string
+  ): Promise<{ ok: boolean; message: string; groupId: string; status: EventStatus }> {
+    return requestJson<{ ok: boolean; message: string; groupId: string; status: EventStatus }>(
+      `/api/admin/update_status/${encodeURIComponent(groupId)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ status }),
+      },
       adminKey
     );
   },

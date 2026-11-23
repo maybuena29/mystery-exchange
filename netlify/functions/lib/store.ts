@@ -56,6 +56,7 @@ export interface SubmissionRecord {
   wishlistCompleted: boolean;
   tokenHash?: string;
   songHash?: string;
+  lockedWishlistItemIds?: string[];
   createdAt: string;
   updatedAt: string;
 }

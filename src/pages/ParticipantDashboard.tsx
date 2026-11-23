@@ -74,6 +74,8 @@ export function ParticipantDashboard() {
               wishlist: updated.wishlist,
               preferences: updated.preferences,
               wishlistCompleted: updated.wishlistCompleted,
+              lockedWishlistItemIds:
+                updated.lockedWishlistItemIds ?? prev.lockedWishlistItemIds,
             }
           : prev
       );
@@ -203,6 +205,7 @@ export function ParticipantDashboard() {
           maxItems={session.group.settings.maxWishlistItems}
           currency={session.group.budget.currency}
           disabled={!session.canEditWishlist}
+          lockedItemIds={session.lockedWishlistItemIds}
           onChangeItems={setWishlist}
           onChangePreferences={setPreferences}
         />

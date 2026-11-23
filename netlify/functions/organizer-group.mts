@@ -112,8 +112,11 @@ export async function handleOrganizerGroup(req: Request, groupId: string): Promi
   const now = new Date().toISOString();
 
   if (action === 'update_details') {
-    if (group.status === 'DRAWN' || group.status === 'LOCKED' || group.status === 'COMPLETED' || group.status === 'CANCELLED') {
-      return errorResponse('Group details cannot be edited after the draw has started or event is closed.', 409);
+    if (group.status === 'LOCKED') {
+      return errorResponse('The draw is currently executing. Please wait a moment and try again.', 409);
+    }
+    if (group.status === 'CANCELLED') {
+      return errorResponse('Group details cannot be edited because this event has been cancelled.', 409);
     }
 
     const updated: GroupRecord = { ...group, updatedAt: now };
