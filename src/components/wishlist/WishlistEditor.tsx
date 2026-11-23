@@ -4,6 +4,7 @@ import {
   ArrowUp,
   Edit3,
   ExternalLink,
+  Lock,
   Plus,
   Trash2,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ interface WishlistEditorProps {
   maxItems: number;
   currency: string;
   disabled?: boolean;
+  lockedItemIds?: string[];
   onChangeItems: (items: WishlistItem[]) => void;
   onChangePreferences: (prefs: ParticipantPreferences) => void;
 }
@@ -73,6 +75,7 @@ export function WishlistEditor({
   maxItems,
   currency,
   disabled = false,
+  lockedItemIds,
   onChangeItems,
   onChangePreferences,
 }: WishlistEditorProps) {
@@ -171,6 +174,10 @@ export function WishlistEditor({
   };
 
   const handleDelete = (id: string) => {
+    if (lockedItemIds && lockedItemIds.includes(id)) {
+      setFormError('Items that existed before the draw started cannot be deleted. You can edit their details or add new items.');
+      return;
+    }
     const filtered = items
       .filter((item) => item.id !== id)
       .map((item, index) => ({ ...item, order: index }));
@@ -216,6 +223,16 @@ export function WishlistEditor({
           </button>
         )}
       </div>
+
+      {!disabled && lockedItemIds && lockedItemIds.length > 0 && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-[#315B46]/20 bg-[#315B46]/5 p-3.5 text-xs text-[#262A27]">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-[#315B46]" />
+          <div>
+            <span className="font-semibold text-[#315B46]">Event started:</span>{' '}
+            Items from your original draw wishlist are locked from deletion so your gift-giver always has reference ideas, but you can still edit their details or add new items. Newly added items can be removed at any time.
+          </div>
+        </div>
+      )}
 
       {/* Item List */}
       {items.length > 0 && (
@@ -309,14 +326,24 @@ export function WishlistEditor({
                   >
                     <Edit3 className="h-4 w-4" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(item.id)}
-                    className="rounded-lg p-1.5 text-[#777B76] hover:bg-[#874B4B]/10 hover:text-[#874B4B]"
-                    aria-label="Delete item"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {lockedItemIds && lockedItemIds.includes(item.id) ? (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-md bg-[#E8E6DF]/70 px-2 py-1 text-[11px] font-medium text-[#777B76]"
+                      title="This item existed before the draw and is locked from deletion. You can still edit its details."
+                    >
+                      <Lock className="h-3 w-3 text-[#777B76]" />
+                      Locked
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item.id)}
+                      className="rounded-lg p-1.5 text-[#777B76] hover:bg-[#874B4B]/10 hover:text-[#874B4B]"
+                      aria-label="Delete item"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               )}
             </div>

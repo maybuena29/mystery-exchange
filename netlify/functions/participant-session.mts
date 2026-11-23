@@ -61,6 +61,11 @@ export async function handleParticipantSession(req: Request): Promise<Response> 
     return errorResponse('Participant record or exchange group no longer exists.', 404);
   }
 
+  const isPostDraw = group.status === 'DRAWN' || group.status === 'COMPLETED';
+  const lockedWishlistItemIds = isPostDraw
+    ? (submission.lockedWishlistItemIds ?? submission.wishlist.map((i) => i.id))
+    : [];
+
   const session: ParticipantSessionView = {
     group: toPublicGroupInfo(group),
     songTitle: submission.songTitle,
@@ -70,6 +75,7 @@ export async function handleParticipantSession(req: Request): Promise<Response> 
     wishlistCompleted: submission.wishlistCompleted,
     joinedAt: submission.createdAt,
     canEditWishlist: canParticipantEditWishlist(group),
+    lockedWishlistItemIds,
   };
 
   if (group.status === 'DRAWN' || group.status === 'COMPLETED') {

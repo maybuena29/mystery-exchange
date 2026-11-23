@@ -229,7 +229,7 @@ export function JoinGroupPage() {
           <div className="flex justify-end">
             <Link
               to={`/participant/${encodeURIComponent(joined.privateToken)}`}
-              className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-6 py-3 text-sm font-medium text-white hover:bg-[#274938]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#315B46] px-6 py-3 text-sm font-medium text-white hover:bg-[#274938]"
             >
               Open My Dashboard
               <ArrowRight className="h-4 w-4" />
@@ -409,7 +409,7 @@ export function JoinGroupPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-8 py-3.5 text-sm font-medium text-white transition-colors hover:bg-[#274938] disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#315B46] px-8 py-3.5 text-sm font-medium text-white transition-colors hover:bg-[#274938] disabled:opacity-50"
             >
               {submitting ? 'Joining Exchange...' : 'Join Exchange'}
               <ArrowRight className="h-4 w-4" />

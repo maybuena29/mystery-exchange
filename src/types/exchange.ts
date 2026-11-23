@@ -132,6 +132,7 @@ export interface ParticipantSessionView {
   wishlistCompleted: boolean;
   joinedAt: string;
   canEditWishlist: boolean;
+  lockedWishlistItemIds?: string[];
   assignment?: AssignedRecipientView;
   giftProgress?: GiftProgress;
 }

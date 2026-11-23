@@ -52,6 +52,23 @@ export async function handleUpdateWishlist(req: Request): Promise<Response> {
     return errorResponse(wishlistRes.error ?? 'Invalid wishlist.', 400);
   }
 
+  // If draw has started, items from the original draw cannot be deleted; participants can only edit them or add new items.
+  // Newly added items can be deleted.
+  let lockedWishlistItemIds = submission.lockedWishlistItemIds;
+  if (group.status === 'DRAWN' || group.status === 'COMPLETED') {
+    if (!lockedWishlistItemIds) {
+      lockedWishlistItemIds = submission.wishlist.map((item) => item.id);
+    }
+    const incomingIds = new Set(wishlistRes.items.map((item) => item.id));
+    const missingLocked = lockedWishlistItemIds.filter((id) => !incomingIds.has(id));
+    if (missingLocked.length > 0) {
+      return errorResponse(
+        'Wishlist items that existed before the draw cannot be deleted. You can edit them or add new items.',
+        400
+      );
+    }
+  }
+
   const preferences =
     parsed.data.preferences !== undefined
       ? validatePreferences(parsed.data.preferences)
@@ -66,6 +83,7 @@ export async function handleUpdateWishlist(req: Request): Promise<Response> {
     wishlist: wishlistRes.items,
     preferences,
     wishlistCompleted,
+    lockedWishlistItemIds: lockedWishlistItemIds ?? submission.lockedWishlistItemIds,
     updatedAt: now,
   };
 
@@ -103,6 +121,7 @@ export async function handleUpdateWishlist(req: Request): Promise<Response> {
     wishlist: updatedSubmission.wishlist,
     preferences: updatedSubmission.preferences,
     wishlistCompleted: updatedSubmission.wishlistCompleted,
+    lockedWishlistItemIds: updatedSubmission.lockedWishlistItemIds,
   });
 }
 

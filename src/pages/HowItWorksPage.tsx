@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
+  CheckCircle2,
   ChevronDown,
   Gift,
-  Lock,
+  HelpCircle,
+  KeyRound,
   Music,
   Shield,
   Shuffle,
+  Sparkles,
   Users,
 } from 'lucide-react';
 
@@ -18,59 +21,59 @@ interface FaqItem {
 
 const FAQ_ITEMS: FaqItem[] = [
   {
-    question: 'Do I need an account?',
+    question: 'Do I need an account or email to participate?',
     answer:
-      'No. HulaWho does not use accounts, passwords, or logins. Each participant receives a unique private access link after joining.',
+      'No. HulaWho is completely account-free and password-free. We never ask for your real name, email address, or phone number. When you join, you receive a private access link that grants you secure access to your exchange dashboard.',
   },
   {
-    question: 'Do I need to enter my real name?',
+    question: 'How does the anonymous song identity work?',
     answer:
-      'No. Your song title is your anonymous identity for the entire exchange. We never ask for your real name, email address, or phone number.',
+      'Instead of using real names, each participant chooses a song title (such as a beloved Christian worship or uplifting song like "Goodness of God", "Friend of God", or "Ikaw Lamang") as their alias. Your gift-giver will only know you by this song and your wishlist until the grand reveal on gift day!',
   },
   {
-    question: 'Can the organizer see my song?',
+    question: 'Can the organizer see my wishlist or my assigned recipient?',
     answer:
-      'No. The organizer dashboard only displays aggregate counts (total participants and completed wishlists). Song titles are never sent to the organizer.',
+      'No. Wishlists and recipient match pairings are protected by cryptographic server-side authorization. Only your assigned gift-giver can view your wishlist after the draw. The organizer dashboard only displays registered song titles in numbered slots to assist with coordination, and cannot see who is assigned to whom.',
   },
   {
-    question: 'Can the organizer see my wishlist?',
+    question: 'Can the organizer edit event details or budget after the draw has started?',
     answer:
-      'No. Only your assigned gift-giver can view your wishlist after the random draw is completed.',
+      'Yes! Organizers can update group settings, gift budget, event date, and instructions at any time—even after the secret draw has finalized. If participants need to tweak their wishlists, the organizer can also toggle post-draw wishlist editing.',
   },
   {
-    question: 'Can I receive my own song?',
+    question: 'Can the draw be restarted or reset if plans change?',
     answer:
-      'No. Our backend randomizer uses a mathematically verified derangement algorithm that guarantees zero self-assignments.',
+      'Yes. If a participant joined late or your group needs to re-run the exchange, the organizer can click "Reset & Start Over" in their dashboard. This securely resets the draw back to the collecting stage with a safety confirmation, allowing you to add more members before running the draw again.',
   },
   {
-    question: 'How do I see my assignment?',
+    question: 'What if I lose or forget my private link?',
     answer:
-      'Bookmark or save your private access link when you join, then reopen that same link after the organizer starts the draw.',
+      'We have three easy ways to recover: 1) Self-Service Recovery: Go to /recover and enter your group code, your song title, and the secret recovery phrase you set when joining. 2) Ask Your Organizer: Your organizer has a "Generate Link" button in their dashboard that generates a fresh private link for your song slot. 3) Super Admin: Platform administrators can also assist organizers with link recovery.',
   },
   {
-    question: 'Can I edit my wishlist?',
+    question: 'Can I receive my own song in the draw?',
     answer:
-      'Yes, depending on the organizer’s settings. By default, wishlists can be edited before the draw, while your song identity remains locked after submission.',
+      'No. Our draw engine uses a mathematically verified derangement algorithm (crypto.getRandomValues) that strictly guarantees zero self-assignments, ensuring everyone gives and receives exactly one gift.',
   },
   {
-    question: 'Can the draw be restarted?',
+    question: 'Can I edit my wishlist after joining?',
     answer:
-      'No. Once the organizer confirms and finalizes the draw, assignments are permanently locked and cannot be reset or re-drawn.',
+      'Yes! You can edit your wishlist and gift preferences anytime before the draw. Organizers can also enable post-draw editing so you can update notes, sizes, or links even after matches are revealed.',
   },
   {
-    question: 'What if I lose my private link?',
+    question: 'How do I see who I am giving a gift to?',
     answer:
-      'Because we do not collect emails or phone numbers, recovery is not possible without your original private link. Please save or bookmark it immediately after joining.',
+      'Simply reopen or bookmark the private link you received when joining. Once your organizer clicks "Start Secret Draw", reopening your link reveals your recipient\'s song title, their wishlist ideas with direct product links, and a gift preparation checklist.',
   },
   {
-    question: 'How many participants are required?',
+    question: 'How many participants can join an exchange?',
     answer:
-      'At least 3 participants are required to run a fair anonymous draw, with a maximum of 50 participants per exchange.',
+      'Between 3 and 50 participants per exchange. At least 3 members are required to guarantee a fair, anonymous round-robin matching.',
   },
   {
-    question: 'Does the website send emails?',
+    question: 'Is HulaWho completely free?',
     answer:
-      'No. HulaWho does not collect email addresses or send automated emails.',
+      'Yes! HulaWho is 100% free with no hidden charges, advertisements, or premium tiers. It is designed to make church fellowships, youth groups, families, and office teams celebrate the joy of giving together.',
   },
 ];
 
@@ -78,31 +81,37 @@ export function HowItWorksPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8 space-y-20">
-      {/* Section A: Introduction */}
-      <section className="text-center max-w-3xl mx-auto">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#315B46]">
-          How It Works
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-16 lg:px-8 space-y-12 sm:space-y-16 lg:space-y-20 overflow-x-hidden">
+      {/* Section A: Hero Intro */}
+      <section className="text-center max-w-3xl mx-auto space-y-4">
+        <p className="inline-flex items-center gap-2 rounded-full border border-[#E8E6DF] bg-white px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#315B46] shadow-xs">
+          <Sparkles className="h-3.5 w-3.5 text-[#B79B62]" />
+          Platform Guide &amp; Walkthrough
         </p>
-        <h1 className="mt-3 font-editorial text-4xl font-semibold text-[#262A27] sm:text-5xl">
-          A little mystery. A lot of thoughtfulness.
+
+        <h1 className="font-editorial text-3xl font-semibold text-[#262A27] sm:text-5xl sm:leading-[1.12]">
+          A little mystery. <br className="hidden sm:inline" />
+          A lot of thoughtfulness.
         </h1>
-        <p className="mt-5 text-base leading-relaxed text-[#777B76]">
-          Instead of drawing real names from a hat, each participant chooses a song title as their
+
+        <p className="text-sm leading-relaxed text-[#777B76] sm:text-base max-w-2xl mx-auto">
+          Instead of drawing names from a hat, each participant chooses a song title as their
           anonymous identity. You prepare a gift for a song and a wishlist—keeping the gift
           exchange spirit genuinely mysterious until gift day.
         </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3.5 sm:flex-row">
+
+        {/* Action CTAs */}
+        <div className="pt-2 flex flex-col items-stretch sm:items-center sm:flex-row justify-center gap-3">
           <Link
             to="/create"
-            className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-6 py-3 text-sm font-medium text-white hover:bg-[#274938]"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#315B46] px-6 py-3 text-sm font-medium text-white shadow-xs hover:bg-[#274938] transition-colors"
           >
             Create an Exchange
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             to="/join"
-            className="inline-flex items-center gap-2 rounded-full border border-[#E8E6DF] bg-white px-6 py-3 text-sm font-medium text-[#262A27] hover:border-[#315B46]"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-[#E8E6DF] bg-white px-6 py-3 text-sm font-medium text-[#262A27] hover:border-[#315B46] hover:text-[#315B46] transition-colors"
           >
             Join an Exchange
           </Link>
@@ -110,7 +119,7 @@ export function HowItWorksPage() {
             href="/video-guide.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-[#B79B62]/40 bg-[#B79B62]/10 px-5 py-3 text-sm font-medium text-[#7A6232] hover:bg-[#B79B62]/20"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-[#B79B62]/40 bg-[#B79B62]/10 px-5 py-3 text-sm font-medium text-[#7A6232] hover:bg-[#B79B62]/20 transition-colors"
           >
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#B79B62] text-white text-[9px] font-bold">▶</span>
             Watch Video Walkthrough
@@ -121,63 +130,70 @@ export function HowItWorksPage() {
       {/* Section B: For Organizers */}
       <section className="space-y-6">
         <div className="flex items-center gap-2.5">
-          <Users className="h-5 w-5 text-[#315B46]" />
-          <h2 className="font-editorial text-2xl font-semibold text-[#262A27] sm:text-3xl">
-            For Organizers
-          </h2>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#315B46]/10 text-[#315B46]">
+            <Users className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="font-editorial text-2xl font-semibold text-[#262A27] sm:text-3xl">
+              For Organizers
+            </h2>
+            <p className="text-xs text-[#777B76]">
+              Coordinate your event with full administrative control while maintaining total secret anonymity.
+            </p>
+          </div>
         </div>
-        <p className="text-sm text-[#777B76]">
-          Organizers coordinate the event without ever seeing individual songs, wishlists, or who
-          is assigned to whom.
-        </p>
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {[
             {
               step: '1. Create Your Group',
               items: [
-                'Set group name & category',
-                'Event date & registration deadline',
-                'Gift budget & currency (default PHP)',
-                'Participant limit (3–50) & wishlist settings',
-                'Custom exchange instructions',
+                'Set group name, occasion category & budget',
+                'Specify event date & optional registration deadline',
+                'Set participant limits (3–50) & wishlist guidelines',
+                'Write custom gift instructions or theme guidelines',
               ],
             },
             {
               step: '2. Share Your Invitation',
               items: [
-                'Copy the public invitation link',
-                'Share it in your group chat or channel',
-                'Keep your private organizer link safe for management',
+                'Copy the formatted public invitation message',
+                'Share it in your Messenger, WhatsApp, or Slack group',
+                'Keep your private organizer link saved to manage the group',
+                'Participants join by choosing a song and saving their link',
               ],
             },
             {
-              step: '3. Monitor Participants',
+              step: '3. Monitor & Assist',
               items: [
-                'View total participant count',
-                'Track wishlist completion count',
-                'Adjust event settings or close/reopen registration',
+                'Track participant counts & completed wishlists',
+                'Remove accidental duplicate slots before the draw',
+                'Generate a fresh link if a participant forgets theirs',
+                'Update details, budget, or event dates anytime',
               ],
             },
             {
-              step: '4. Start the Exchange',
+              step: '4. Start the Draw (or Reset)',
               items: [
-                'Close registration & lock submissions',
-                'Run the cryptographically secure random draw',
-                'Participants reopen their private links to view matches',
+                'Close registration & trigger the cryptographically fair draw',
+                'Participants reopen their private links to see their match',
+                'Settings & instructions can still be edited after the draw',
+                'Reset the draw anytime if plans change or people join late',
               ],
             },
           ].map((card) => (
             <div
               key={card.step}
-              className="rounded-2xl border border-[#E8E6DF] bg-white p-6 space-y-3"
+              className="rounded-2xl border border-[#E8E6DF] bg-white p-5 sm:p-6 space-y-3 shadow-2xs"
             >
-              <h3 className="font-editorial text-lg font-semibold text-[#262A27]">{card.step}</h3>
-              <ul className="space-y-1.5 text-sm text-[#777B76]">
+              <h3 className="font-editorial text-base sm:text-lg font-semibold text-[#262A27]">
+                {card.step}
+              </h3>
+              <ul className="space-y-2 text-xs sm:text-sm text-[#777B76]">
                 {card.items.map((item) => (
                   <li key={item} className="flex items-start gap-2">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#315B46]" />
-                    <span>{item}</span>
+                    <span className="leading-snug">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -189,136 +205,184 @@ export function HowItWorksPage() {
       {/* Section C: For Participants */}
       <section className="space-y-6">
         <div className="flex items-center gap-2.5">
-          <Music className="h-5 w-5 text-[#874B4B]" />
-          <h2 className="font-editorial text-2xl font-semibold text-[#262A27] sm:text-3xl">
-            For Participants
-          </h2>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#874B4B]/10 text-[#874B4B]">
+            <Music className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="font-editorial text-2xl font-semibold text-[#262A27] sm:text-3xl">
+              For Participants
+            </h2>
+            <p className="text-xs text-[#777B76]">
+              Four simple steps to joining, sharing your wishlist, and getting your mystery match.
+            </p>
+          </div>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
               num: '01',
-              title: 'Join the Exchange',
-              desc: 'Open the invitation link shared by your organizer.',
+              title: 'Open Group Invite',
+              desc: 'Click the public invitation link shared by your exchange organizer.',
             },
             {
               num: '02',
-              title: 'Choose Your Mystery Song',
-              desc: 'Pick a song title (and optional artist) as your anonymous identity.',
+              title: 'Pick a Song Alias',
+              desc: 'Choose a song title (e.g. Christian worship or uplifting song) as your secret identity.',
             },
             {
               num: '03',
-              title: 'Create Your Wishlist',
-              desc: 'Add gift ideas, links, and preferences—then save your private access link.',
+              title: 'Build Wishlist & Save Link',
+              desc: 'Add gift ideas, priorities, and save your private access link and recovery phrase.',
             },
             {
               num: '04',
-              title: 'Discover Your Mystery Match',
-              desc: 'Reopen your saved private link after the draw to see your recipient.',
+              title: 'Reveal Your Recipient',
+              desc: 'Reopen your private link after the draw to see your recipient’s song and wishlist!',
             },
           ].map((step) => (
             <div
               key={step.num}
-              className="rounded-2xl border border-[#E8E6DF] bg-white p-5 space-y-2"
+              className="rounded-2xl border border-[#E8E6DF] bg-white p-5 space-y-2 shadow-2xs"
             >
-              <span className="text-xs font-semibold tracking-widest text-[#B79B62]">
+              <span className="text-[11px] font-semibold tracking-widest text-[#B79B62]">
                 STEP {step.num}
               </span>
-              <h3 className="font-editorial text-lg font-semibold text-[#262A27]">{step.title}</h3>
-              <p className="text-sm text-[#777B76]">{step.desc}</p>
+              <h3 className="font-editorial text-base sm:text-lg font-semibold text-[#262A27]">
+                {step.title}
+              </h3>
+              <p className="text-xs sm:text-sm leading-relaxed text-[#777B76]">{step.desc}</p>
             </div>
           ))}
         </div>
 
-        <div className="rounded-xl border border-[#B79B62]/35 bg-[#B79B62]/10 p-4 text-sm text-[#262A27]">
-          <strong>Important:</strong> Save or bookmark your private access link immediately after
-          joining. You will reopen that same link after the draw to view your assigned recipient.
+        {/* Important Bookmark Notice */}
+        <div className="rounded-2xl border border-[#B79B62]/40 bg-[#B79B62]/10 p-4 sm:p-5 flex items-start gap-3">
+          <KeyRound className="h-5 w-5 text-[#B79B62] shrink-0 mt-0.5" />
+          <div className="text-xs sm:text-sm text-[#262A27] space-y-1">
+            <p className="font-semibold">Save your private link upon joining!</p>
+            <p className="text-[#777B76] leading-relaxed">
+              We never collect your email or phone number. Bookmark your private link or keep your
+              recovery phrase safe. You can also self-recover at any time on{' '}
+              <Link to="/recover" className="text-[#315B46] font-medium underline">
+                the recovery page
+              </Link>.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Section D: Anonymity */}
-      <section className="rounded-3xl border border-[#E8E6DF] bg-white p-8 space-y-4">
+      {/* Section D: How Anonymity Works */}
+      <section className="rounded-3xl border border-[#E8E6DF] bg-white p-6 sm:p-8 space-y-4 shadow-2xs">
         <div className="flex items-center gap-2.5">
           <Shield className="h-5 w-5 text-[#315B46]" />
-          <h2 className="font-editorial text-2xl font-semibold text-[#262A27]">
-            How Anonymity Works
+          <h2 className="font-editorial text-xl sm:text-2xl font-semibold text-[#262A27]">
+            How Privacy &amp; Anonymity Work
           </h2>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 text-sm text-[#777B76]">
-          <ul className="space-y-2">
-            <li>• No real names, emails, or phone numbers are collected.</li>
-            <li>• Song titles act as anonymous participant identities.</li>
-            <li>• Organizers see aggregate counts only—never individual submissions.</li>
+        <div className="grid gap-4 sm:grid-cols-2 text-xs sm:text-sm text-[#777B76]">
+          <ul className="space-y-2.5">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#315B46] mt-0.5" />
+              <span>No personal data: No real names, emails, phone numbers, or social logins are stored.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#315B46] mt-0.5" />
+              <span>Song titles act as your alias: Only the song title is visible to other participants.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#315B46] mt-0.5" />
+              <span>Private wishlists: Only your assigned gift-giver can see your wishlist after the draw.</span>
+            </li>
           </ul>
-          <ul className="space-y-2">
-            <li>• Participants cannot browse other participants&apos; submissions.</li>
-            <li>• Only the assigned gift-giver can view a recipient&apos;s wishlist after the draw.</li>
-            <li>
-              • <strong>Realistic limitation:</strong> If friends already know your signature song,
-              they might recognize it—so pick a song that keeps the fun!
+          <ul className="space-y-2.5">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#315B46] mt-0.5" />
+              <span>Zero-leak pairing: The organizer cannot view who is matched to whom.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#315B46] mt-0.5" />
+              <span>Mathematical derangement: Server-side cryptographic algorithms guarantee zero self-matches.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#B79B62] mt-0.5" />
+              <span>Tip: Choose a song that reflects your personality, but doesn’t immediately give away your identity!</span>
             </li>
           </ul>
         </div>
       </section>
 
-      {/* Section E: Random Draw */}
+      {/* Section E: The Random Draw */}
       <section className="space-y-6">
         <div className="flex items-center gap-2.5">
           <Shuffle className="h-5 w-5 text-[#315B46]" />
           <h2 className="font-editorial text-2xl font-semibold text-[#262A27] sm:text-3xl">
-            The Random Draw
+            The Secret Matching Draw
           </h2>
         </div>
-        <p className="text-sm leading-relaxed text-[#777B76]">
-          Using cryptographically secure randomness on the server (<code>crypto.getRandomValues</code>),
-          the draw guarantees: no self-assignment, one recipient per participant, every participant
-          assigned exactly once, and every song assigned exactly once.
+        <p className="text-xs sm:text-sm leading-relaxed text-[#777B76]">
+          Using cryptographically secure randomness on the server, the draw guarantees that no one receives
+          their own song, every participant is assigned exactly one recipient, and every recipient gets
+          exactly one giver.
         </p>
 
         {/* Illustrative assignment diagram */}
-        <div className="rounded-2xl border border-[#E8E6DF] bg-white p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#777B76] mb-4">
-            Illustrative Assignment Diagram (Sample Songs)
+        <div className="rounded-2xl border border-[#E8E6DF] bg-white p-5 sm:p-6 shadow-2xs">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#777B76] mb-3">
+            Sample Matching Flow (Worship Songs)
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               {
-                giver: '"Friend of God" (Israel Houghton)',
-                recipient: '"Goodness of God" (CeCe Winans)',
+                giver: '"Friend of God"',
+                artist: 'Israel Houghton',
+                recipient: '"Goodness of God"',
+                recArtist: 'CeCe Winans',
               },
               {
-                giver: '"Goodness of God" (CeCe Winans)',
-                recipient: '"Ikaw Lamang" (JIL Worship)',
+                giver: '"Goodness of God"',
+                artist: 'CeCe Winans',
+                recipient: '"Ikaw Lamang"',
+                recArtist: 'JIL Worship',
               },
               {
-                giver: '"Ikaw Lamang" (JIL Worship)',
-                recipient: '"Friend of God" (Israel Houghton)',
+                giver: '"Ikaw Lamang"',
+                artist: 'JIL Worship',
+                recipient: '"Friend of God"',
+                recArtist: 'Israel Houghton',
               },
             ].map((pair) => (
               <div
                 key={pair.giver}
-                className="flex flex-col items-center justify-center rounded-xl border border-[#E8E6DF] bg-[#F8F7F3] p-4 text-center"
+                className="flex flex-col items-center justify-center rounded-xl border border-[#E8E6DF] bg-[#F8F7F3] p-4 text-center space-y-1"
               >
-                <span className="text-sm font-medium text-[#262A27]">{pair.giver}</span>
-                <span className="my-1.5 text-xs text-[#315B46] font-medium">gives a gift to ↓</span>
-                <span className="text-sm font-medium text-[#874B4B]">{pair.recipient}</span>
+                <span className="text-xs sm:text-sm font-semibold text-[#262A27] break-words">
+                  {pair.giver}
+                </span>
+                <span className="text-[10px] text-[#777B76]">{pair.artist}</span>
+                <span className="my-1 inline-flex items-center gap-1 rounded-full bg-[#315B46]/10 px-2 py-0.5 text-[10px] font-medium text-[#315B46]">
+                  gives gift to ↓
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-[#874B4B] break-words">
+                  {pair.recipient}
+                </span>
+                <span className="text-[10px] text-[#777B76]">{pair.recArtist}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Section F: FAQ */}
+      {/* Section F: Updated FAQs */}
       <section className="space-y-6">
         <div className="flex items-center gap-2.5">
-          <Lock className="h-5 w-5 text-[#315B46]" />
+          <HelpCircle className="h-5 w-5 text-[#315B46]" />
           <h2 className="font-editorial text-2xl font-semibold text-[#262A27] sm:text-3xl">
             Frequently Asked Questions
           </h2>
         </div>
 
-        <div className="divide-y divide-[#E8E6DF] rounded-2xl border border-[#E8E6DF] bg-white">
+        <div className="divide-y divide-[#E8E6DF] rounded-2xl border border-[#E8E6DF] bg-white shadow-2xs overflow-hidden">
           {FAQ_ITEMS.map((item, idx) => {
             const isOpen = openFaq === idx;
             return (
@@ -327,17 +391,17 @@ export function HowItWorksPage() {
                   type="button"
                   onClick={() => setOpenFaq(isOpen ? null : idx)}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-sm font-medium text-[#262A27] hover:bg-[#F8F7F3]/60"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 sm:px-6 sm:py-4.5 text-left text-xs sm:text-sm font-medium text-[#262A27] hover:bg-[#F8F7F3]/60 transition-colors"
                 >
-                  <span>{item.question}</span>
+                  <span className="leading-snug">{item.question}</span>
                   <ChevronDown
-                    className={`h-4 w-4 shrink-0 text-[#777B76] transition-transform ${
-                      isOpen ? 'rotate-180' : ''
+                    className={`h-4 w-4 shrink-0 text-[#777B76] transition-transform duration-200 ${
+                      isOpen ? 'rotate-180 text-[#315B46]' : ''
                     }`}
                   />
                 </button>
                 {isOpen && (
-                  <div className="px-6 pb-4 text-sm leading-relaxed text-[#777B76]">
+                  <div className="px-4 pb-4 sm:px-6 sm:pb-5 text-xs sm:text-sm leading-relaxed text-[#777B76] animate-fade-in">
                     {item.answer}
                   </div>
                 )}
@@ -347,25 +411,30 @@ export function HowItWorksPage() {
         </div>
       </section>
 
-      {/* Section G: Final CTA */}
-      <section className="rounded-3xl border border-[#E8E6DF] bg-white p-10 text-center">
-        <Gift className="mx-auto h-7 w-7 text-[#315B46]" />
-        <h2 className="mt-4 font-editorial text-3xl font-semibold text-[#262A27]">
-          Ready to make gift-giving more exciting?
+      {/* Section G: CTA Banner */}
+      <section className="rounded-3xl border border-[#E8E6DF] bg-white p-6 sm:p-10 text-center space-y-4 shadow-2xs">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#315B46]/10 text-[#315B46]">
+          <Gift className="h-6 w-6" />
+        </span>
+        <h2 className="font-editorial text-2xl sm:text-3xl font-semibold text-[#262A27]">
+          Ready to start your song-based exchange?
         </h2>
-        <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <p className="text-xs sm:text-sm text-[#777B76] max-w-md mx-auto">
+          Create an exchange in under a minute and share the invite with your friends, family, or fellowship!
+        </p>
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             to="/create"
-            className="inline-flex items-center gap-2 rounded-full bg-[#315B46] px-7 py-3 text-sm font-medium text-white hover:bg-[#274938]"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#315B46] px-7 py-3 text-sm font-medium text-white hover:bg-[#274938] transition-colors"
           >
             Create an Exchange
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             to="/join"
-            className="inline-flex items-center gap-2 rounded-full border border-[#E8E6DF] bg-white px-7 py-3 text-sm font-medium text-[#262A27] hover:border-[#315B46]"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-[#E8E6DF] bg-white px-7 py-3 text-sm font-medium text-[#262A27] hover:border-[#315B46] transition-colors"
           >
-            Join an Exchange
+            Join with Code
           </Link>
         </div>
       </section>

@@ -41,19 +41,51 @@ export async function handleStartDraw(req: Request): Promise<Response> {
     return errorResponse('Invalid organizer authorization token.', 403);
   }
 
-  if (initialEntry.data.status === 'DRAWN' || initialEntry.data.status === 'COMPLETED') {
+  const isRedraw = parsed.data.redraw === true;
+
+  if (!isRedraw && (initialEntry.data.status === 'DRAWN' || initialEntry.data.status === 'COMPLETED')) {
     return errorResponse('This exchange has already been drawn and cannot be run again.', 409);
   }
 
   // Acquire exclusive draw lock
   const lockKey = keys.drawLock(groupId);
-  const lockRes = await storage.setJSON(
+
+  if (isRedraw) {
+    try {
+      await storage.delete(lockKey);
+    } catch {
+      // Ignore
+    }
+  }
+
+  let lockRes = await storage.setJSON(
     lockKey,
     { groupId, lockedAt: new Date().toISOString() },
     { onlyIfNew: true }
   );
   if (!lockRes.modified) {
-    return errorResponse('A draw is already in progress or has been finalized for this group.', 409);
+    const existingLock = await storage.getJSON<{ groupId: string; lockedAt?: string }>(lockKey);
+    const lockAgeMs = existingLock?.lockedAt
+      ? Date.now() - new Date(existingLock.lockedAt).getTime()
+      : Infinity;
+
+    // If the group is in a pre-draw state or redraw was requested, release any stale lock
+    if (initialEntry.data.status !== 'LOCKED' && (isRedraw || lockAgeMs > 10_000)) {
+      try {
+        await storage.delete(lockKey);
+      } catch {
+        // Ignore
+      }
+      lockRes = await storage.setJSON(
+        lockKey,
+        { groupId, lockedAt: new Date().toISOString() },
+        { onlyIfNew: true }
+      );
+    }
+
+    if (!lockRes.modified) {
+      return errorResponse('A draw is already in progress or has been finalized for this group.', 409);
+    }
   }
 
   try {
@@ -63,9 +95,19 @@ export async function handleStartDraw(req: Request): Promise<Response> {
     }
 
     const group = entry.data;
-    const readiness = computeDrawReadiness(group);
-    if (!readiness.isReady) {
-      return errorResponse(readiness.reasons[0] ?? 'Group is not ready for the draw.', 409);
+
+    if (!isRedraw) {
+      const readiness = computeDrawReadiness(group);
+      if (!readiness.isReady) {
+        return errorResponse(readiness.reasons[0] ?? 'Group is not ready for the draw.', 409);
+      }
+    } else {
+      if (group.status === 'CANCELLED') {
+        return errorResponse('Cannot re-draw a cancelled exchange.', 409);
+      }
+      if (group.status === 'LOCKED') {
+        return errorResponse('A draw is currently in progress.', 409);
+      }
     }
 
     const participantIds = group.participantIds;
@@ -86,6 +128,15 @@ export async function handleStartDraw(req: Request): Promise<Response> {
       if (incomplete) {
         return errorResponse('All participants must complete a wishlist before the draw.', 409);
       }
+    }
+
+    // If re-drawing, clear any previous gift checklist/notes so participants start fresh with their new match
+    if (isRedraw) {
+      await Promise.all(
+        participantIds.map((pid) =>
+          storage.delete(keys.giftProgress(groupId, pid)).catch(() => {})
+        )
+      );
     }
 
     // Transition group to LOCKED atomically before writing assignments
@@ -118,9 +169,20 @@ export async function handleStartDraw(req: Request): Promise<Response> {
           recipientParticipantId: recipients[idx],
           finalizedAt,
         };
-        return storage.setJSON(keys.assignment(groupId, giverId), assignment, {
-          onlyIfNew: true,
-        });
+        return storage.setJSON(keys.assignment(groupId, giverId), assignment);
+      })
+    );
+
+    // Snapshot each participant's current wishlist item IDs so they cannot be deleted post-draw
+    await Promise.all(
+      participantIds.map(async (pid) => {
+        const sub = await storage.getJSON<SubmissionRecord>(keys.submission(groupId, pid));
+        if (sub) {
+          await storage.setJSON(keys.submission(groupId, pid), {
+            ...sub,
+            lockedWishlistItemIds: sub.wishlist.map((item) => item.id),
+          });
+        }
       })
     );
 

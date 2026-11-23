@@ -1,11 +1,18 @@
 import type { Config, Context } from '@netlify/functions';
 import { verifySuperAdminToken } from './lib/crypto';
-import { checkRateLimit, errorResponse, extractBearerToken, jsonResponse } from './lib/http';
+import {
+  checkRateLimit,
+  errorResponse,
+  extractBearerToken,
+  jsonResponse,
+  parseJsonBody,
+} from './lib/http';
 import {
   getStorage,
   keys,
   type GroupRecord,
   type ParticipantSummary,
+  type SubmissionRecord,
 } from './lib/store';
 import type {
   AdminGroupSummary,
@@ -120,7 +127,102 @@ export async function handleAdmin(
     });
   }
 
-  // 3. Platform Overview & Groups List
+  // 3. Update Group Status (Super Admin override)
+  if (
+    action === 'update_status' ||
+    action === 'change_status' ||
+    action === 'status' ||
+    (req.method === 'PATCH' && effectiveGroupId)
+  ) {
+    let targetId = effectiveGroupId;
+    let nextStatusStr = '';
+
+    const parsed = await parseJsonBody<{ status?: string; groupId?: string }>(req);
+    if (parsed.ok) {
+      if (typeof parsed.data.status === 'string') {
+        nextStatusStr = parsed.data.status;
+      }
+      if (!targetId && typeof parsed.data.groupId === 'string') {
+        targetId = parsed.data.groupId.trim();
+      }
+    }
+
+    if (!targetId) {
+      return errorResponse('Group ID is required to update status.', 400);
+    }
+
+    const nextStatus = nextStatusStr.trim().toUpperCase() as EventStatus;
+    if (!ALL_STATUSES.includes(nextStatus)) {
+      return errorResponse(
+        `Invalid event status "${nextStatusStr}". Allowed values: ${ALL_STATUSES.join(', ')}`,
+        400
+      );
+    }
+
+    const groupKey = keys.group(targetId);
+    const existing = await storage.getJSON<GroupRecord>(groupKey);
+    if (!existing) {
+      return errorResponse('Group not found.', 404);
+    }
+
+    const isPreDraw =
+      nextStatus === 'CREATED' ||
+      nextStatus === 'COLLECTING' ||
+      nextStatus === 'REGISTRATION_CLOSED' ||
+      nextStatus === 'READY';
+
+    const now = new Date().toISOString();
+    const updatedGroup: GroupRecord = {
+      ...existing,
+      status: nextStatus,
+      updatedAt: now,
+      drawnAt: isPreDraw ? undefined : (nextStatus === 'DRAWN' && !existing.drawnAt ? now : existing.drawnAt),
+    };
+
+    // If resetting to a pre-draw state, unlock drawLock and wipe previous assignments so a re-draw is possible
+    if (isPreDraw) {
+      try {
+        await storage.delete(keys.drawLock(targetId));
+      } catch {
+        // Ignore
+      }
+
+      await Promise.all(
+        existing.participantIds.map(async (pid) => {
+          try {
+            await storage.delete(keys.assignment(targetId, pid));
+          } catch {
+            // Ignore
+          }
+          try {
+            await storage.delete(keys.giftProgress(targetId, pid));
+          } catch {
+            // Ignore
+          }
+          try {
+            const sub = await storage.getJSON<SubmissionRecord>(keys.submission(targetId, pid));
+            if (sub && sub.lockedWishlistItemIds) {
+              const { lockedWishlistItemIds: _, ...rest } = sub;
+              await storage.setJSON(keys.submission(targetId, pid), rest);
+            }
+          } catch {
+            // Ignore
+          }
+        })
+      );
+    }
+
+    await storage.setJSON(groupKey, updatedGroup);
+
+    return jsonResponse({
+      ok: true,
+      message: `Group "${existing.groupName}" status updated to ${nextStatus}.`,
+      groupId: targetId,
+      status: nextStatus,
+    });
+  }
+
+  // 4. Platform Overview & Groups List
   if (req.method === 'GET' || action === 'overview') {
     // Collect group IDs from storage listKeys and group-index blob
     const rawKeys = await storage.listKeys('groups/');
@@ -319,5 +421,5 @@ export default async (req: Request, context: Context) => {
 
 export const config: Config = {
   path: ['/api/admin', '/api/admin/:action', '/api/admin/:action/:groupId'],
-  method: ['GET', 'POST', 'DELETE'],
+  method: ['GET', 'POST', 'PATCH', 'DELETE'],
 };
