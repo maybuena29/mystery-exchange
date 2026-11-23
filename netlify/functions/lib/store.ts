@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { getStore } from '@netlify/blobs';
 import type {
   BudgetSettings,
@@ -106,6 +108,7 @@ export interface StorageAdapter {
   getJSONWithEtag<T>(key: string): Promise<GetWithEtagResult<T> | null>;
   setJSON<T>(key: string, value: T, options?: SetOptions): Promise<SetResult>;
   delete(key: string): Promise<void>;
+  listKeys(prefix?: string): Promise<string[]>;
 }
 
 /**
@@ -148,42 +151,180 @@ export class MemoryStorageAdapter implements StorageAdapter {
     this.map.delete(key);
   }
 
+  async listKeys(prefix = ''): Promise<string[]> {
+    return Array.from(this.map.keys()).filter((key) => key.startsWith(prefix));
+  }
+
   clear(): void {
     this.map.clear();
   }
 }
 
-class NetlifyBlobsStorageAdapter implements StorageAdapter {
-  private get store() {
-    return getStore({ name: 'mystery-exchange', consistency: 'strong' });
+/**
+ * File-based storage adapter used during local development when running without Netlify CLI.
+ * Persists to `.netlify/blobs-local.json` so groups created in `npm run dev` survive restarts.
+ */
+export class LocalFileStorageAdapter implements StorageAdapter {
+  private filePath: string;
+  private map = new Map<string, { raw: string; etag: string }>();
+  private seq = 0;
+
+  constructor(filePath?: string) {
+    this.filePath = filePath || path.resolve(process.cwd(), '.netlify', 'blobs-local.json');
+    this.load();
+  }
+
+  private load(): void {
+    try {
+      if (fs.existsSync(this.filePath)) {
+        const content = fs.readFileSync(this.filePath, 'utf8');
+        const data = JSON.parse(content);
+        if (data && typeof data === 'object') {
+          for (const [k, v] of Object.entries(data)) {
+            this.map.set(k, v as { raw: string; etag: string });
+          }
+        }
+      }
+    } catch {
+      // Ignore reading errors on fresh setup
+    }
+  }
+
+  private save(): void {
+    try {
+      const dir = path.dirname(this.filePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const obj: Record<string, { raw: string; etag: string }> = {};
+      for (const [k, v] of this.map.entries()) {
+        obj[k] = v;
+      }
+      fs.writeFileSync(this.filePath, JSON.stringify(obj, null, 2), 'utf8');
+    } catch {
+      // Ignore write errors in restricted environments
+    }
   }
 
   async getJSON<T>(key: string): Promise<T | null> {
-    const res = await this.store.get(key, { type: 'json', consistency: 'strong' });
-    return (res as T | null) ?? null;
+    const entry = this.map.get(key);
+    if (!entry) return null;
+    try {
+      return JSON.parse(entry.raw) as T;
+    } catch {
+      return null;
+    }
   }
 
   async getJSONWithEtag<T>(key: string): Promise<GetWithEtagResult<T> | null> {
-    const res = await this.store.getWithMetadata(key, { type: 'json', consistency: 'strong' });
-    if (res === null) return null;
-    return {
-      data: res.data as T,
-      etag: res.etag ?? '',
-    };
+    const entry = this.map.get(key);
+    if (!entry) return null;
+    try {
+      return { data: JSON.parse(entry.raw) as T, etag: entry.etag };
+    } catch {
+      return null;
+    }
   }
 
   async setJSON<T>(key: string, value: T, options?: SetOptions): Promise<SetResult> {
-    const blobOptions = options?.onlyIfNew
-      ? { onlyIfNew: true as const }
-      : options?.onlyIfMatch !== undefined
-        ? { onlyIfMatch: options.onlyIfMatch }
-        : undefined;
-    const res = await this.store.setJSON(key, value, blobOptions);
-    return { modified: res.modified, etag: res.etag };
+    const existing = this.map.get(key);
+    if (options?.onlyIfNew && existing) {
+      return { modified: false };
+    }
+    if (options?.onlyIfMatch !== undefined) {
+      if (!existing || existing.etag !== options.onlyIfMatch) {
+        return { modified: false };
+      }
+    }
+    this.seq += 1;
+    const etag = `loc-etag-${Date.now()}-${this.seq}`;
+    this.map.set(key, { raw: JSON.stringify(value), etag });
+    this.save();
+    return { modified: true, etag };
   }
 
   async delete(key: string): Promise<void> {
-    await this.store.delete(key);
+    this.map.delete(key);
+    this.save();
+  }
+
+  async listKeys(prefix = ''): Promise<string[]> {
+    return Array.from(this.map.keys()).filter((key) => key.startsWith(prefix));
+  }
+}
+
+class NetlifyBlobsStorageAdapter implements StorageAdapter {
+  private fallbackAdapter = new LocalFileStorageAdapter();
+
+  private get store() {
+    try {
+      return getStore({ name: 'mystery-exchange', consistency: 'strong' });
+    } catch {
+      return null;
+    }
+  }
+
+  async getJSON<T>(key: string): Promise<T | null> {
+    const s = this.store;
+    if (!s) return this.fallbackAdapter.getJSON<T>(key);
+    try {
+      const res = await s.get(key, { type: 'json', consistency: 'strong' });
+      return (res as T | null) ?? null;
+    } catch {
+      return this.fallbackAdapter.getJSON<T>(key);
+    }
+  }
+
+  async getJSONWithEtag<T>(key: string): Promise<GetWithEtagResult<T> | null> {
+    const s = this.store;
+    if (!s) return this.fallbackAdapter.getJSONWithEtag<T>(key);
+    try {
+      const res = await s.getWithMetadata(key, { type: 'json', consistency: 'strong' });
+      if (res === null) return null;
+      return {
+        data: res.data as T,
+        etag: res.etag ?? '',
+      };
+    } catch {
+      return this.fallbackAdapter.getJSONWithEtag<T>(key);
+    }
+  }
+
+  async setJSON<T>(key: string, value: T, options?: SetOptions): Promise<SetResult> {
+    const s = this.store;
+    if (!s) return this.fallbackAdapter.setJSON<T>(key, value, options);
+    try {
+      const blobOptions = options?.onlyIfNew
+        ? { onlyIfNew: true as const }
+        : options?.onlyIfMatch !== undefined
+          ? { onlyIfMatch: options.onlyIfMatch }
+          : undefined;
+      const res = await s.setJSON(key, value, blobOptions);
+      return { modified: res.modified, etag: res.etag };
+    } catch {
+      return this.fallbackAdapter.setJSON<T>(key, value, options);
+    }
+  }
+
+  async delete(key: string): Promise<void> {
+    const s = this.store;
+    if (!s) return this.fallbackAdapter.delete(key);
+    try {
+      await s.delete(key);
+    } catch {
+      return this.fallbackAdapter.delete(key);
+    }
+  }
+
+  async listKeys(prefix = ''): Promise<string[]> {
+    const s = this.store;
+    if (!s) return this.fallbackAdapter.listKeys(prefix);
+    try {
+      const res = await s.list({ prefix });
+      return (res.blobs || []).map((b) => b.key);
+    } catch {
+      return this.fallbackAdapter.listKeys(prefix);
+    }
   }
 }
 

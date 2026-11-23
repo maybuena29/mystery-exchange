@@ -1,5 +1,5 @@
 import type { Config } from '@netlify/functions';
-import { hashToken, timingSafeEqualHex } from './lib/crypto';
+import { hashToken, timingSafeEqualHex, verifySuperAdminToken } from './lib/crypto';
 import { generateDerangement, verifyDerangement } from './lib/derangement';
 import { errorResponse, extractBearerToken, jsonResponse, parseJsonBody } from './lib/http';
 import {
@@ -35,8 +35,9 @@ export async function handleStartDraw(req: Request): Promise<Response> {
     return errorResponse('Exchange group not found.', 404);
   }
 
+  const isSuperAdmin = verifySuperAdminToken(token);
   const incomingHash = hashToken(token);
-  if (!timingSafeEqualHex(incomingHash, initialEntry.data.organizerTokenHash)) {
+  if (!isSuperAdmin && !timingSafeEqualHex(incomingHash, initialEntry.data.organizerTokenHash)) {
     return errorResponse('Invalid organizer authorization token.', 403);
   }
 

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { handleAdmin } from '../netlify/functions/admin.mts';
 import { handleCreateGroup } from '../netlify/functions/create-group.mts';
 import { handleGetGroup } from '../netlify/functions/get-group.mts';
 import { handleJoinGroup } from '../netlify/functions/join-group.mts';
@@ -10,6 +11,7 @@ import { handleStartDraw } from '../netlify/functions/start-draw.mts';
 import { handleUpdateGiftProgress } from '../netlify/functions/update-gift-progress.mts';
 import { handleUpdateWishlist } from '../netlify/functions/update-wishlist.mts';
 import type {
+  AdminOverviewResponse,
   CreateGroupResponse,
   JoinGroupResponse,
   OrganizerGroupView,
@@ -433,5 +435,113 @@ describe('Mystery Exchange End-to-End API & Security', () => {
       jsonReq('http://localhost/api/participant/session', 'GET', undefined, body2.privateToken)
     );
     expect(removedSess.status).toBe(404);
+  });
+
+  it('super admin portal: authenticates, lists all groups, views platform reports, and grants organizer access', async () => {
+    const superAdminKey = process.env.SUPER_ADMIN_KEY || 'hulawho-super-admin-2026';
+
+    // 1. Rejects unauthorized access
+    const noKeyRes = await handleAdmin(
+      jsonReq('http://localhost/api/admin/overview', 'GET'),
+      'overview'
+    );
+    expect(noKeyRes.status).toBe(401);
+
+    const badKeyRes = await handleAdmin(
+      jsonReq('http://localhost/api/admin/overview', 'GET', undefined, 'invalid-secret-key'),
+      'overview'
+    );
+    expect(badKeyRes.status).toBe(401);
+
+    // 2. Authenticates with valid key
+    const authRes = await handleAdmin(
+      jsonReq('http://localhost/api/admin/auth', 'GET', undefined, superAdminKey),
+      'auth'
+    );
+    expect(authRes.status).toBe(200);
+
+    // 3. Create sample groups to inspect
+    const createRes1 = await handleCreateGroup(
+      jsonReq('http://localhost/api/create-group', 'POST', {
+        groupName: 'JIL Worship Team Exchange',
+        category: 'Office Exchange',
+        budget: { amount: 1000, currency: 'PHP' },
+        settings: { maxParticipants: 12 },
+      })
+    );
+    expect(createRes1.status).toBe(201);
+    const { groupId: gId1 } = (await createRes1.json()) as CreateGroupResponse;
+
+    const createRes2 = await handleCreateGroup(
+      jsonReq('http://localhost/api/create-group', 'POST', {
+        groupName: 'Youth Camp Song Exchange',
+        category: 'Christmas',
+        budget: { amount: 500, currency: 'PHP' },
+        settings: { maxParticipants: 20 },
+      })
+    );
+    expect(createRes2.status).toBe(201);
+    const { groupId: gId2 } = (await createRes2.json()) as CreateGroupResponse;
+
+    // Join participants into group 1
+    const p1 = await handleJoinGroup(
+      jsonReq('http://localhost/api/join-group', 'POST', {
+        groupId: gId1,
+        songTitle: 'Alabaster Box',
+        artist: 'CeCe Winans',
+        wishlist: [{ name: 'Acoustic Guitar Strings', description: 'Elixir light gauge', category: 'Hobbies', priority: 'must_have' }],
+      })
+    );
+    expect(p1.status).toBe(201);
+
+    // 4. Super Admin overview reports
+    const overviewRes = await handleAdmin(
+      jsonReq('http://localhost/api/admin/overview', 'GET', undefined, superAdminKey),
+      'overview'
+    );
+    expect(overviewRes.status).toBe(200);
+    const overview = (await overviewRes.json()) as AdminOverviewResponse;
+
+    expect(overview.stats.totalGroups).toBe(2);
+    expect(overview.stats.totalParticipants).toBe(1);
+    expect(overview.stats.totalWishlistsCompleted).toBe(1);
+    expect(overview.stats.activeGroups).toBe(2);
+    expect(overview.stats.categoryCounts['Office Exchange']).toBe(1);
+    expect(overview.stats.categoryCounts['Christmas']).toBe(1);
+    expect(overview.groups).toHaveLength(2);
+
+    const foundG1 = overview.groups.find((g) => g.groupId === gId1);
+    expect(foundG1).toBeDefined();
+    expect(foundG1?.groupName).toBe('JIL Worship Team Exchange');
+    expect(foundG1?.participantCount).toBe(1);
+    expect(foundG1?.invitationUrl).toBe(`/join/${gId1}`);
+    expect(foundG1?.organizerUrl).toContain(`/organizer/${gId1}`);
+    expect(foundG1?.organizerUrl).toContain(`sa_${superAdminKey}`);
+
+    // 5. Super Admin can access organizer dashboard directly using the super admin token
+    const superAdminOrgRes = await handleOrganizerGroup(
+      jsonReq(`http://localhost/api/organizer/${gId1}`, 'GET', undefined, `sa_${superAdminKey}`),
+      gId1
+    );
+    expect(superAdminOrgRes.status).toBe(200);
+    const { group: superOrgGroup } = (await superAdminOrgRes.json()) as { group: OrganizerGroupView };
+    expect(superOrgGroup.groupName).toBe('JIL Worship Team Exchange');
+
+    // 6. Super Admin can delete a group (e.g. test group gId2)
+    const deleteRes = await handleAdmin(
+      jsonReq(`http://localhost/api/admin/delete_group/${gId2}`, 'DELETE', undefined, superAdminKey),
+      'delete_group',
+      gId2
+    );
+    expect(deleteRes.status).toBe(200);
+
+    // Overview now reflects deletion
+    const overviewAfterDel = await handleAdmin(
+      jsonReq('http://localhost/api/admin/overview', 'GET', undefined, superAdminKey),
+      'overview'
+    );
+    const afterDelData = (await overviewAfterDel.json()) as AdminOverviewResponse;
+    expect(afterDelData.stats.totalGroups).toBe(1);
+    expect(afterDelData.groups.find((g) => g.groupId === gId2)).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 import type { Config, Context } from '@netlify/functions';
-import { generateSecretToken, hashToken, timingSafeEqualHex } from './lib/crypto';
+import { generateSecretToken, hashToken, timingSafeEqualHex, verifySuperAdminToken } from './lib/crypto';
 import { errorResponse, extractBearerToken, jsonResponse, parseJsonBody } from './lib/http';
 import {
   getStorage,
@@ -35,6 +35,11 @@ async function authorizeOrganizer(
   const entry = await storage.getJSONWithEtag<GroupRecord>(keys.group(groupId));
   if (!entry) {
     return { ok: false, response: errorResponse('Exchange group not found.', 404) };
+  }
+
+  // Allow Super Admin token access
+  if (verifySuperAdminToken(token)) {
+    return { ok: true, group: entry.data, etag: entry.etag };
   }
 
   const incomingHash = hashToken(token);

@@ -166,3 +166,52 @@ export interface JoinGroupResponse {
   privateToken: string;
   session: ParticipantSessionView;
 }
+
+export interface AdminGroupSummary {
+  groupId: string;
+  groupName: string;
+  description?: string;
+  category: EventCategory;
+  eventDate?: string;
+  registrationDeadline?: string;
+  instructions?: string;
+  budget: BudgetSettings;
+  settings: GroupSettings;
+  status: EventStatus;
+  participantCount: number;
+  completedWishlistCount: number;
+  createdAt: string;
+  updatedAt: string;
+  drawnAt?: string;
+  invitationUrl: string;
+  organizerUrl: string;
+  anonymousSlots?: AnonymousSlot[];
+}
+
+export interface AdminRecentActivityItem {
+  id: string;
+  type: 'group_created' | 'draw_completed' | 'group_updated';
+  groupId: string;
+  groupName: string;
+  timestamp: string;
+  details: string;
+}
+
+export interface AdminPlatformStats {
+  totalGroups: number;
+  totalParticipants: number;
+  totalWishlistsCompleted: number;
+  totalDrawsCompleted: number;
+  activeGroups: number;
+  cancelledGroups: number;
+  wishlistCompletionRate: number;
+  drawCompletionRate: number;
+  statusCounts: Record<EventStatus, number>;
+  categoryCounts: Record<EventCategory, number>;
+  recentActivity: AdminRecentActivityItem[];
+}
+
+export interface AdminOverviewResponse {
+  stats: AdminPlatformStats;
+  groups: AdminGroupSummary[];
+}
