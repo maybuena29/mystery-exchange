@@ -313,10 +313,14 @@ export async function handleAdmin(
       }
 
       if (ALL_STATUSES.includes(g.status)) {
-        statusCounts[g.status] = (statusCounts[g.status] || 0) + 1;
+        const s = g.status as EventStatus;
+        statusCounts[s] = (statusCounts[s] || 0) + 1;
       }
 
-      const cat = g.category && ALL_CATEGORIES.includes(g.category) ? g.category : 'Custom';
+      const cat: EventCategory =
+        g.category && ALL_CATEGORIES.includes(g.category as EventCategory)
+          ? (g.category as EventCategory)
+          : 'Custom';
       categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
 
       // Activity: Group created

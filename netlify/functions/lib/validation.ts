@@ -112,6 +112,7 @@ export function validateGroupSettings(raw: unknown): { valid: boolean; settings?
       allowEditAfterDraw: input.allowEditAfterDraw !== undefined ? Boolean(input.allowEditAfterDraw) : false,
       requireCompletedWishlist:
         input.requireCompletedWishlist !== undefined ? Boolean(input.requireCompletedWishlist) : false,
+      enableWheel: input.enableWheel !== undefined ? Boolean(input.enableWheel) : true,
     },
   };
 }

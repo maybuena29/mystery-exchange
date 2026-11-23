@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Calendar,
   CheckCircle2,
@@ -12,6 +12,7 @@ import {
 import { LoadingScreen } from '../components/common/LoadingScreen';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { WishlistEditor } from '../components/wishlist/WishlistEditor';
+import { WheelWinBanner } from '../components/wheel/WheelWinBanner';
 import { participantService } from '../services/api';
 import type {
   ParticipantPreferences,
@@ -53,6 +54,19 @@ export function ParticipantDashboard() {
 
   useEffect(() => {
     void fetchSession();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchSession();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    const interval = setInterval(() => {
+      void fetchSession();
+    }, 10000);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(interval);
+    };
   }, [privateToken]);
 
   const handleSaveWishlist = async () => {
@@ -111,6 +125,11 @@ export function ParticipantDashboard() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8 space-y-8">
+      {/* Winner Notification Banner */}
+      {session.wheelWins && session.wheelWins.length > 0 && (
+        <WheelWinBanner wins={session.wheelWins} groupId={session.group.groupId} />
+      )}
+
       {/* Header */}
       <div className="rounded-3xl border border-[#E8E6DF] bg-white p-6 sm:p-8 space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -123,6 +142,17 @@ export function ParticipantDashboard() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            {session.group.settings?.enableWheel !== false && (
+              <Link
+                to={`/wheel/${encodeURIComponent(session.group.groupId)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#B79B62]/40 bg-[#B79B62]/10 px-3.5 py-1 text-xs font-medium text-[#7A6232] hover:bg-[#B79B62]/20 transition-colors"
+                title="Watch the live wheel of songs"
+              >
+                <span>🎡</span> Watch Live Wheel
+              </Link>
+            )}
             <StatusBadge status={session.group.status} />
             <button
               type="button"

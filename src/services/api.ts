@@ -11,6 +11,9 @@ import type {
   ParticipantSessionView,
   PublicGroupInfo,
   WishlistItem,
+  WheelEntry,
+  WheelWinnerRecord,
+  WheelViewState,
 } from '../types/exchange';
 
 async function requestJson<T>(
@@ -214,6 +217,140 @@ export const adminService = {
         body: JSON.stringify({ status }),
       },
       adminKey
+    );
+  },
+};
+
+export const wheelService = {
+  async getWheelState(groupId: string, organizerToken?: string | null): Promise<WheelViewState> {
+    return requestJson<WheelViewState>(
+      `/api/wheel/${encodeURIComponent(groupId)}`,
+      { method: 'GET' },
+      organizerToken
+    );
+  },
+
+  async spin(
+    groupId: string,
+    entryId: string,
+    organizerToken: string
+  ): Promise<{
+    success: boolean;
+    winner: WheelWinnerRecord;
+    remainingCount: number;
+    entries: WheelEntry[];
+    winnerHistory: WheelWinnerRecord[];
+  }> {
+    return requestJson(
+      `/api/wheel/${encodeURIComponent(groupId)}/spin`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ entryId }),
+      },
+      organizerToken
+    );
+  },
+
+  async addEntry(
+    groupId: string,
+    songTitle: string,
+    artist: string | undefined,
+    organizerToken: string
+  ): Promise<{ success: boolean; entry: WheelEntry; entries: WheelEntry[] }> {
+    return requestJson(
+      `/api/wheel/${encodeURIComponent(groupId)}/entries`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ subOp: 'add', songTitle, artist }),
+      },
+      organizerToken
+    );
+  },
+
+  async editEntry(
+    groupId: string,
+    entryId: string,
+    songTitle: string,
+    artist: string | undefined,
+    organizerToken: string
+  ): Promise<{ success: boolean; entry: WheelEntry; entries: WheelEntry[] }> {
+    return requestJson(
+      `/api/wheel/${encodeURIComponent(groupId)}/entries`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ subOp: 'edit', entryId, songTitle, artist }),
+      },
+      organizerToken
+    );
+  },
+
+  async toggleExcludeEntry(
+    groupId: string,
+    entryId: string,
+    organizerToken: string
+  ): Promise<{ success: boolean; entry: WheelEntry; entries: WheelEntry[] }> {
+    return requestJson(
+      `/api/wheel/${encodeURIComponent(groupId)}/entries`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ subOp: 'toggle_exclude', entryId }),
+      },
+      organizerToken
+    );
+  },
+
+  async removeEntry(
+    groupId: string,
+    entryId: string,
+    organizerToken: string
+  ): Promise<{ success: boolean; entries: WheelEntry[] }> {
+    return requestJson(
+      `/api/wheel/${encodeURIComponent(groupId)}/entries`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ subOp: 'remove', entryId }),
+      },
+      organizerToken
+    );
+  },
+
+  async resetWheel(
+    groupId: string,
+    organizerToken: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    entries: WheelEntry[];
+    winnerHistory: WheelWinnerRecord[];
+  }> {
+    return requestJson(
+      `/api/wheel/${encodeURIComponent(groupId)}/reset`,
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+      },
+      organizerToken
+    );
+  },
+
+  async revealWinner(
+    groupId: string,
+    winnerId: string,
+    organizerToken: string
+  ): Promise<{
+    success: boolean;
+    entries: WheelEntry[];
+    winnerHistory: WheelWinnerRecord[];
+    totalActiveCount: number;
+    totalWinnersCount: number;
+  }> {
+    return requestJson(
+      `/api/wheel/${encodeURIComponent(groupId)}/reveal`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ winnerId }),
+      },
+      organizerToken
     );
   },
 };

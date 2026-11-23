@@ -43,7 +43,7 @@ export function getSuperAdminKey(): string {
   } catch {
     // Ignore
   }
-  return (process.env.SUPER_ADMIN_KEY || 'hulawho-super-admin-2026').trim();
+  return (process.env.SUPER_ADMIN_KEY || 'dev-local-admin-key-2026').trim();
 }
 
 export function verifySuperAdminToken(providedToken?: string | null): boolean {

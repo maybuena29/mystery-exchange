@@ -40,6 +40,7 @@ export function CreateGroupPage() {
   const [allowEditBeforeDraw, setAllowEditBeforeDraw] = useState(true);
   const [allowEditAfterDraw, setAllowEditAfterDraw] = useState(false);
   const [requireCompletedWishlist, setRequireCompletedWishlist] = useState(false);
+  const [enableWheel, setEnableWheel] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +76,7 @@ export function CreateGroupPage() {
           allowEditBeforeDraw,
           allowEditAfterDraw,
           requireCompletedWishlist,
+          enableWheel,
         },
       });
 
@@ -414,6 +416,16 @@ export function CreateGroupPage() {
                 className="mt-1 h-4 w-4 rounded border-[#E8E6DF] accent-[#315B46]"
               />
               <span>Require at least one wishlist item from everyone before starting the draw</span>
+            </label>
+
+            <label className="flex items-start gap-3 text-sm text-[#262A27]">
+              <input
+                type="checkbox"
+                checked={enableWheel}
+                onChange={(e) => setEnableWheel(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-[#E8E6DF] accent-[#315B46]"
+              />
+              <span>Enable Wheel of Songs for this event</span>
             </label>
           </div>
         </section>

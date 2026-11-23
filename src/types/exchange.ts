@@ -61,6 +61,7 @@ export interface GroupSettings {
   allowEditBeforeDraw: boolean;
   allowEditAfterDraw: boolean;
   requireCompletedWishlist: boolean;
+  enableWheel?: boolean;
 }
 
 export interface PublicGroupInfo {
@@ -133,6 +134,7 @@ export interface ParticipantSessionView {
   joinedAt: string;
   canEditWishlist: boolean;
   lockedWishlistItemIds?: string[];
+  wheelWins?: WheelWinNotice[];
   assignment?: AssignedRecipientView;
   giftProgress?: GiftProgress;
 }
@@ -215,4 +217,65 @@ export interface AdminPlatformStats {
 export interface AdminOverviewResponse {
   stats: AdminPlatformStats;
   groups: AdminGroupSummary[];
+}
+
+export interface WheelEntry {
+  id: string; // Unique entry ID (e.g. entry_pid_12345)
+  participantId: string; // Actual participant ID (or 'manual_xxx')
+  songTitle: string;
+  artist?: string;
+  slotNumber?: number;
+  excluded: boolean;
+  source: 'participant' | 'manual';
+  createdAt: string;
+}
+
+export interface WheelWinnerRecord {
+  winnerId: string;
+  entryId: string;
+  participantId: string;
+  order: number; // 1st, 2nd, 3rd, etc.
+  songTitle: string;
+  artist?: string;
+  slotNumber?: number;
+  wonAt: string;
+  revealedAt?: string; // Exact timestamp when winner was confirmed/revealed by clicking Continue in modal
+  revealAt?: string; // Delayed reveal timestamp fallback
+  wishlistSummary?: Array<{ name: string; estimatedPrice?: number }>;
+}
+
+export interface WheelCurrentSpin {
+  entryId: string;
+  spunAt: string;
+  durationMs: number;
+}
+
+export interface WheelStateRecord {
+  groupId: string;
+  entries: WheelEntry[];
+  winnerHistory: WheelWinnerRecord[];
+  currentSpin?: WheelCurrentSpin;
+  updatedAt: string;
+}
+
+export interface WheelWinNotice {
+  winnerId: string;
+  order: number;
+  songTitle: string;
+  artist?: string;
+  wonAt: string;
+}
+
+export interface WheelViewState {
+  groupId: string;
+  groupName: string;
+  category: EventCategory;
+  enabled: boolean;
+  isOrganizer: boolean;
+  entries: WheelEntry[];
+  winnerHistory: WheelWinnerRecord[];
+  currentSpin?: WheelCurrentSpin;
+  totalActiveCount: number;
+  totalExcludedCount: number;
+  totalWinnersCount: number;
 }
