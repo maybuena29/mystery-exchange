@@ -33,6 +33,7 @@ auth.json
 # Vite / Netlify / TypeScript build artifacts
 dist/
 .netlify/
+.vite/
 *.tsbuildinfo
 .DS_Store
 coverage/

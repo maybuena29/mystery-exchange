@@ -34,3 +34,29 @@ export function timingSafeEqualHex(a: string, b: string): boolean {
   if (bufA.length !== bufB.length) return false;
   return timingSafeEqual(bufA, bufB);
 }
+
+export function getSuperAdminKey(): string {
+  try {
+    const netlifyGlobal = (globalThis as { Netlify?: { env?: { get?: (k: string) => string | undefined } } }).Netlify;
+    const val = netlifyGlobal?.env?.get?.('SUPER_ADMIN_KEY');
+    if (val && val.trim().length > 0) return val.trim();
+  } catch {
+    // Ignore
+  }
+  return (process.env.SUPER_ADMIN_KEY || 'hulawho-super-admin-2026').trim();
+}
+
+export function verifySuperAdminToken(providedToken?: string | null): boolean {
+  if (!providedToken) return false;
+  const masterKey = getSuperAdminKey();
+  let candidate = providedToken.trim();
+  if (candidate.startsWith('sa_')) {
+    candidate = candidate.slice(3);
+  }
+  if (candidate.length !== masterKey.length) {
+    return false;
+  }
+  const bufA = Buffer.from(candidate, 'utf8');
+  const bufB = Buffer.from(masterKey, 'utf8');
+  return timingSafeEqual(bufA, bufB);
+}

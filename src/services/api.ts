@@ -1,4 +1,5 @@
 import type {
+  AdminOverviewResponse,
   CreateGroupPayload,
   CreateGroupResponse,
   GiftProgress,
@@ -159,5 +160,31 @@ export const participantService = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+};
+
+export const adminService = {
+  async authenticate(adminKey: string): Promise<{ ok: boolean; message: string }> {
+    return requestJson<{ ok: boolean; message: string }>(
+      '/api/admin/auth',
+      { method: 'GET' },
+      adminKey
+    );
+  },
+
+  async getOverview(adminKey: string): Promise<AdminOverviewResponse> {
+    return requestJson<AdminOverviewResponse>(
+      '/api/admin/overview',
+      { method: 'GET' },
+      adminKey
+    );
+  },
+
+  async deleteGroup(groupId: string, adminKey: string): Promise<{ ok: boolean; message: string; groupId: string }> {
+    return requestJson<{ ok: boolean; message: string; groupId: string }>(
+      `/api/admin/delete_group/${encodeURIComponent(groupId)}`,
+      { method: 'DELETE' },
+      adminKey
+    );
   },
 };

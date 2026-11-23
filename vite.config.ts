@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import fs from 'node:fs';
 import path from 'node:path';
+import { netlifyDevApiPlugin } from './viteDevApiPlugin';
 
 /**
  * Writes Netlify production security headers to dist/_headers on build,
@@ -30,7 +31,7 @@ function netlifyHeadersPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), netlifyHeadersPlugin()],
+  plugins: [react(), tailwindcss(), netlifyHeadersPlugin(), netlifyDevApiPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -38,11 +39,5 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8888',
-        changeOrigin: true,
-      },
-    },
   },
 });

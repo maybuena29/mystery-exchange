@@ -9,6 +9,7 @@ import { ParticipantDashboard } from './pages/ParticipantDashboard';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { RecoverLinkPage } from './pages/RecoverLinkPage';
 import { ResultPage } from './pages/ResultPage';
+import { SuperAdminPage } from './pages/SuperAdminPage';
 import { TermsPage } from './pages/TermsPage';
 
 function NotFoundPage() {
@@ -47,6 +48,9 @@ export function App() {
           <Route path="/result/:privateToken" element={<ResultPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/super-admin-portal" element={<SuperAdminPage />} />
+          <Route path="/admin-portal" element={<SuperAdminPage />} />
+          <Route path="/admin-hub" element={<SuperAdminPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Layout>

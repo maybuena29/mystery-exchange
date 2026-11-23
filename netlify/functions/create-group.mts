@@ -52,6 +52,17 @@ export async function handleCreateGroup(req: Request, clientIp = 'unknown'): Pro
     return errorResponse('Could not create group due to ID collision. Please retry.', 409);
   }
 
+  // Register in group-index blob for rapid lookup
+  try {
+    const existingIndex = (await storage.getJSON<string[]>('group-index')) || [];
+    if (!existingIndex.includes(groupId)) {
+      existingIndex.unshift(groupId);
+      await storage.setJSON('group-index', existingIndex);
+    }
+  } catch {
+    // Non-blocking fallback; storage.listKeys will still enumerate it
+  }
+
   return jsonResponse(
     {
       groupId,
